@@ -5,9 +5,7 @@ import { envVars } from "./app/config/env";
 import app from "./app";
 
 
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
 let server: Server;
-
 
 const startServer = async () => {
 
@@ -27,3 +25,59 @@ const startServer = async () => {
 (async () => {
     await startServer();
 })();
+
+
+// unhandled rejection error(premiss rejection)
+process.on("unhandledRejection", (err) => {
+    console.log("Unhandled Rejection detected ......... Server shutting down...", err);
+
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+
+    process.exit(1);
+});
+
+
+// uncaught rejection error(not connect with premiss)
+process.on("uncaughtException", (err) => {
+    console.log("Uncaught Exception detected ......... Server shutting down...", err);
+
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+
+    process.exit(1);
+});
+
+
+// signal termination sigterm
+process.on("SIGTERM", () => {
+    console.log("SIGTERM signal received ......... Server shutting down...");
+
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+
+    process.exit(1);
+});
+
+
+// for manual shut down
+process.on("SIGINT", () => {
+    console.log("SIGINT signal received ......... Server shutting down...");
+
+    if (server) {
+        server.close(() => {
+            process.exit(1);
+        });
+    }
+
+    process.exit(1);
+});

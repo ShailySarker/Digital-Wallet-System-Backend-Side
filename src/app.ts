@@ -1,5 +1,6 @@
 import express, { Request, Response } from "express";
 import cors from "cors";
+import notFound from "./app/middlewares/notFound";
 
 const app = express();
 
@@ -13,5 +14,7 @@ app.get("/", (req: Request, res: Response) => {
     })
 });
 
+// not found route
+app.use(notFound);
 
 export default app;
