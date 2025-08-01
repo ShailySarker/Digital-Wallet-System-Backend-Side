@@ -52,26 +52,32 @@ export const updateUserZodSchema = z.object({
     name: z
         .string({ message: "Name must be string" })
         .min(2, { message: "Name must be at least 2 characters long." })
-        .max(50, { message: "Name cannot exceed 50 characters." }),
+        .max(50, { message: "Name cannot exceed 50 characters." })
+        .optional(),
     email: z
         .string({ message: "Email must be string" })
         .email({ message: "Invalid email address format." })
         .min(5, { message: "Email must be at least 5 characters long." })
-        .max(100, { message: "Email cannot exceed 100 characters." }),
+        .max(100, { message: "Email cannot exceed 100 characters." })
+        .optional(),
     password: z
         .string({ message: "Password must be string" })
-        .min(6, { message: "Password must be at least 8 characters long." }),
+        .min(6, { message: "Password must be at least 8 characters long." })
+        .optional(),
     phone: z
         .string({ message: "Phone Number must be string" })
         .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
             message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
-        }),
+        })
+        .optional(),
     role: z
         .enum(Object.values(Role) as [string])
-        .default(Role.USER),
+        .default(Role.USER)
+        .optional(),
     nidNumber: z
         .string({ message: 'nidNumber must be a string of digits' })
-        .regex(/^([0-9]{10}|[0-9]{17})$/, 'nidNumber must be exactly 10 or 17 digits long'),
+        .regex(/^([0-9]{10}|[0-9]{17})$/, 'nidNumber must be exactly 10 or 17 digits long')
+        .optional(),
     isActive: z
         .enum(Object.values(IsActive) as [string])
         .default(IsActive.ACTIVE)

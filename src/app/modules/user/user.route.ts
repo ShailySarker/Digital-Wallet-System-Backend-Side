@@ -10,8 +10,8 @@ const router = express.Router();
 router.post("/register", validatedRequest(createUserZodSchema), UserControllers.createUser);
 router.get("/my-profile", checkAuth(...Object.values(Role)), UserControllers.getMyProfile);
 router.get("/all-category-user", checkAuth(Role.ADMIN), UserControllers.getAllCategoryUser);
-router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
-router.get("/all-agents", checkAuth(Role.ADMIN), UserControllers.getAllAgents);
+// router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
+// router.get("/all-agents", checkAuth(Role.ADMIN), UserControllers.getAllAgents);
 router.get("/:id", checkAuth(...Object.values(Role)), UserControllers.getSingleUser);
 router.patch("/:id", validatedRequest(updateUserZodSchema), checkAuth(...Object.values(Role)), UserControllers.updateUser);//Approve/suspend agent(admin only)
 

@@ -12,7 +12,7 @@ import { Wallet } from "../wallet/wallet.model";
 const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => {
     const session = await User.startSession();
     session.startTransaction();
-    
+
     try {
         // console.log("payload...........", payload);
         const { email, phone, role, password, nidNumber, ...rest } = payload;
@@ -42,7 +42,7 @@ const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => 
         if (existingNid) {
             throw new AppError(status.BAD_REQUEST, 'NID number is already used');
         }
-        
+
         // Hash password
         const hashedPassword = await bcryptjs.hash(password, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
 
@@ -100,6 +100,7 @@ const getMyProfile = async (userId: string) => {
         data: user
     };
 };
+
 const getAllCategoryUser = async (query: Record<string, string>) => {
 
     const queryBuilder = new QueryBuilder(User.find(), query)
@@ -120,43 +121,7 @@ const getAllCategoryUser = async (query: Record<string, string>) => {
         meta
     }
 };
-const getAllUsers = async (query: Record<string, string>) => {
 
-    const queryBuilder = new QueryBuilder(User.find({ role: Role.USER }), query)
-    const usersData = queryBuilder
-        .filter()
-        .search(userSearchableFields)
-        .sort()
-        .fields()
-        .paginate();
-
-    const [data, meta] = await Promise.all([
-        usersData.build(),
-        queryBuilder.getMeta()
-    ]);
-
-    return {
-        data,
-        meta
-    }
-};
-const getAllAgents = async (payload: Partial<IUser>) => {
-
-    const { email, password, ...rest } = payload;
-
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const isUserExist = await User.findOne({ email });
-
-    const hashedPassword = await bcryptjs.hash(password as string, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
-
-    const user = await User.create({
-        email,
-        password: hashedPassword,
-        ...rest
-    });
-
-    return user;
-};
 const getSingleUser = async (id: string) => {
     const user = await User.findById(id).select("-password");
     return {
@@ -198,8 +163,6 @@ export const UserServices = {
     createUser,
     getMyProfile,
     getAllCategoryUser,
-    getAllUsers,
-    getAllAgents,
     getSingleUser,
     updateUser
 };

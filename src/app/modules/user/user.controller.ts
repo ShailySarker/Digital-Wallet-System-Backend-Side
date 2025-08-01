@@ -28,9 +28,10 @@ const getMyProfile = catchAsync(async (req: Request, res: Response, next: NextFu
         data: result.data
     })
 });
+
 const getAllCategoryUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
-    const result = await UserServices.getAllUsers(query as Record<string, string>)
+    const result = await UserServices.getAllCategoryUser(query as Record<string, string>)
 
     sendResponse(res, {
         success: true,
@@ -40,28 +41,7 @@ const getAllCategoryUser = catchAsync(async (req: Request, res: Response, next: 
         meta: result.meta
     });
 });
-const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const query = req.query;
-    const result = await UserServices.getAllUsers(query as Record<string, string>)
 
-    sendResponse(res, {
-        success: true,
-        statusCode: status.OK,
-        message: "All users retrieved successfully",
-        data: result.data,
-        meta: result.meta
-    });
-});
-const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
-
-    sendResponse(res, {
-        success: true,
-        statusCode: status.CREATED,
-        message: "User created successfully",
-        data: user,
-    })
-});
 const getSingleUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
     const result = await UserServices.getSingleUser(id);
@@ -93,8 +73,6 @@ export const UserControllers = {
     createUser,
     getMyProfile,
     getAllCategoryUser,
-    getAllUsers,
-    getAllAgents,
     getSingleUser,
     updateUser
 };
