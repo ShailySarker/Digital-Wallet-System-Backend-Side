@@ -18,14 +18,9 @@ export const createUserZodSchema = z.object({
         .string({ message: "Phone Number must be string" })
         .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
             message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
-        })
-        .optional(),
+        }),
     role: z
-        .enum(Object.values(Role) as [string])
-        .optional(),
-    isActive: z
-        .enum(Object.values(IsActive) as [string])
-        .optional(),
+        .enum(Object.values(Role) as [string]),
     nidNumber: z
         .coerce.number({ message: 'nidNumber must be a number' })
         .refine((val) => {
@@ -33,7 +28,9 @@ export const createUserZodSchema = z.object({
             return digits === 10 || digits === 17;
         }, {
             message: 'nidNumber must be exactly 10 or 17 digits long',
-        })
+        }),
+    isActive: z
+        .enum(Object.values(IsActive) as [string])
         .optional(),
     isVerified: z
         .boolean({ message: "isVerified must be boolean" })

@@ -4,7 +4,7 @@ export enum Role {
     // SUPER_ADMIN = "SUPER_ADMIN",
     ADMIN = "ADMIN",
     USER = "USER",
-    GUIDE = "AGENT"
+    AGENT = "AGENT"
 };
 
 export enum IsActive {
@@ -21,14 +21,14 @@ export enum IsApproved {
 export interface IUser {
     name: string;
     email: string;
-    phone?: string;
+    phone: string;
     password: string;
-    role?: Role;
-    nidNumber?: number;
+    nidNumber: number;
+    role: Role;
     wallet?: Types.ObjectId;//user 
-    isActive?: IsActive; //user
+    isActive?: IsActive; //for user set admin
     isVerified?: boolean;//email or phone otp verification
-    isApproved?: IsApproved;//agent
-    commissionRate?: number;//agent
-    isDeleted?: boolean;
+    isApproved?: IsApproved;//for agent set admin
+    commissionRate?: number;//for agent set admin
+    isDeleted?: boolean;//set admin
 };

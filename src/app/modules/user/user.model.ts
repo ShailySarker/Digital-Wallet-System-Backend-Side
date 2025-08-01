@@ -25,8 +25,13 @@ const userSchema = new Schema<IUser>(
             type: String,
             required: true,
         },
+        nidNumber: {
+            type: Number,
+            required: true
+        },
         role: {
             type: String,
+            required: true,
             enum: Object.values(Role),
             default: Role.USER
         },
@@ -42,9 +47,6 @@ const userSchema = new Schema<IUser>(
         isApproved: {
             type: Boolean,
             default: false
-        },
-        nidNumber: {
-            type: String,
         },
         wallet: {
             type: Schema.Types.ObjectId,

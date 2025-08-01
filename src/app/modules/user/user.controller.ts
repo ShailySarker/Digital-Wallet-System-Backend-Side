@@ -4,6 +4,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { UserServices } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import status from "http-status";
+import { JwtPayload } from "jsonwebtoken";
 
 const createUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserServices.createUser(req.body);
@@ -15,25 +16,41 @@ const createUser = catchAsync(async (req: Request, res: Response, next: NextFunc
         data: user,
     })
 });
-const getMyProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
 
+const getMyProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+
+    const decodedToken = req.user as JwtPayload;
+    const result = await UserServices.getMyProfile(decodedToken.userId);
     sendResponse(res, {
         success: true,
         statusCode: status.CREATED,
-        message: "User created successfully",
-        data: user,
+        message: "Your profile Retrieved Successfully",
+        data: result.data
     })
 });
-const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
+const getAllCategoryUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const query = req.query;
+    const result = await UserServices.getAllUsers(query as Record<string, string>)
 
     sendResponse(res, {
         success: true,
-        statusCode: status.CREATED,
-        message: "User created successfully",
-        data: user,
-    })
+        statusCode: status.OK,
+        message: "All users retrieved successfully",
+        data: result.data,
+        meta: result.meta
+    });
+});
+const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const query = req.query;
+    const result = await UserServices.getAllUsers(query as Record<string, string>)
+
+    sendResponse(res, {
+        success: true,
+        statusCode: status.OK,
+        message: "All users retrieved successfully",
+        data: result.data,
+        meta: result.meta
+    });
 });
 const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
     const user = await UserServices.createUser(req.body);
@@ -46,30 +63,36 @@ const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFu
     })
 });
 const getSingleUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
-
+    const id = req.params.id;
+    const result = await UserServices.getSingleUser(id);
     sendResponse(res, {
         success: true,
         statusCode: status.CREATED,
-        message: "User created successfully",
-        data: user,
-    })
+        message: "User Retrieved Successfully",
+        data: result.data
+    });
 });
+
 const updateUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
+
+    const userId = req.params.id;
+    const verifiedToken = req.user;
+    const payload = req.body;
+
+    const user = await UserServices.updateUser(userId, payload, verifiedToken as JwtPayload);
 
     sendResponse(res, {
         success: true,
-        statusCode: status.CREATED,
-        message: "User created successfully",
+        statusCode: status.OK,
+        message: "User updated successfully",
         data: user,
     })
 });
-
 
 export const UserControllers = {
     createUser,
     getMyProfile,
+    getAllCategoryUser,
     getAllUsers,
     getAllAgents,
     getSingleUser,
