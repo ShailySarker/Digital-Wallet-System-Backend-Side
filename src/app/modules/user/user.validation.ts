@@ -13,9 +13,9 @@ export const createUserZodSchema = z.object({
         .max(100, { message: "Email cannot exceed 100 characters." }),
     password: z
         .string({ message: "Password must be string" })
-        .min(6, { message: "Password must be at least 8 characters long." }),
+        .regex(/^\d{6}$/, 'Password must be string of exactly 6 digits'),
     phone: z
-        .string({ message: "Phone Number must be string" })
+        .string({ message: "Phone number must be string" })
         .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
             message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
         }),
@@ -23,13 +23,8 @@ export const createUserZodSchema = z.object({
         .enum(Object.values(Role) as [string])
         .default(Role.USER),
     nidNumber: z
-        .coerce.number({ message: 'nidNumber must be a number' })
-        .refine((val) => {
-            const digits = String(Math.trunc(val)).length;
-            return digits === 10 || digits === 17;
-        }, {
-            message: 'nidNumber must be exactly 10 or 17 digits long',
-        }),
+        .string({ message: 'nidNumber must be a string of digits' })
+        .regex(/^([0-9]{10}|[0-9]{17})$/, 'nidNumber must be a string of exactly 10 or 17 digits long'),
     isActive: z
         .enum(Object.values(IsActive) as [string])
         .default(IsActive.ACTIVE)
@@ -70,28 +65,24 @@ export const updateUserZodSchema = z.object({
         .string({ message: "Phone Number must be string" })
         .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
             message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
-        })
-        .optional(),
+        }),
     role: z
         .enum(Object.values(Role) as [string])
-        .optional(),
+        .default(Role.USER),
+    nidNumber: z
+        .string({ message: 'nidNumber must be a string of digits' })
+        .regex(/^([0-9]{10}|[0-9]{17})$/, 'nidNumber must be exactly 10 or 17 digits long'),
     isActive: z
         .enum(Object.values(IsActive) as [string])
-        .optional(),
-    nidNumber: z
-        .coerce.number({ message: 'nidNumber must be a number' })
-        .refine((val) => {
-            const digits = String(Math.trunc(val)).length;
-            return digits === 10 || digits === 17;
-        }, {
-            message: 'nidNumber must be exactly 10 or 17 digits long',
-        })
+        .default(IsActive.ACTIVE)
         .optional(),
     isVerified: z
         .boolean({ message: "isVerified must be boolean" })
+        .default(false)
         .optional(),
     isApproved: z
         .enum(Object.values(IsApproved) as [string])
+        .default(IsApproved.PENDING)
         .optional(),
     commissionRate: z
         .number({ message: "commissionRate must be number" })
@@ -103,3 +94,4 @@ export const updateUserZodSchema = z.object({
         .boolean({ message: "isDeleted must be boolean" })
         .optional()
 });
+

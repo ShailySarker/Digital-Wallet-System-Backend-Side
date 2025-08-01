@@ -25,7 +25,7 @@ export interface IUser {
     email: string;
     phone: string;
     password: string;
-    nidNumber: number;
+    nidNumber: string;
     role: Role;
     wallet?: Types.ObjectId;//user 
     isActive?: IsActive; //for user set admin

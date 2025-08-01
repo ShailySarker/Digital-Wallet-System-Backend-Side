@@ -18,6 +18,8 @@ interface EnvConfig {
     ADMIN: {
         ADMIN_EMAIL: string;
         ADMIN_PASSWORD: string;
+        ADMIN_PHONE: string;
+        ADMIN_NID_NUMBER: string;
     };
     FRONTEND: {
         FRONTEND_URL: string;
@@ -29,8 +31,10 @@ interface EnvConfig {
         SMTP_PASS: string;
         SMTP_FROM: string;
     };
-
-
+    WALLET: {
+        INITIAL_BALANCE: string;
+        COMMISSION_RATE: string;
+    };
 };
 
 const loadEnvVariables = (): EnvConfig => {
@@ -46,12 +50,16 @@ const loadEnvVariables = (): EnvConfig => {
         "BCRYPT_SALT_ROUND",
         "ADMIN_EMAIL",
         "ADMIN_PASSWORD",
+        "ADMIN_PHONE",
+        "ADMIN_NID_NUMBER",
         "FRONTEND_URL",
         "SMTP_HOST",
         "SMTP_PORT",
         "SMTP_USER",
         "SMTP_PASS",
         "SMTP_FROM",
+        "INITIAL_BALANCE",
+        "COMMISSION_RATE",
     ];
 
     requiredEnvVariables.forEach(key => {
@@ -78,6 +86,8 @@ const loadEnvVariables = (): EnvConfig => {
         ADMIN: {
             ADMIN_EMAIL: process.env.ADMIN_EMAIL as string,
             ADMIN_PASSWORD: process.env.ADMIN_PASSWORD as string,
+            ADMIN_PHONE: process.env.ADMIN_PHONE as string,
+            ADMIN_NID_NUMBER: process.env.ADMIN_NID_NUMBER as string,
         },
         FRONTEND: {
             FRONTEND_URL: process.env.FRONTEND_URL as string,
@@ -88,6 +98,10 @@ const loadEnvVariables = (): EnvConfig => {
             SMTP_USER: process.env.SMTP_USER as string,
             SMTP_PASS: process.env.SMTP_PASS as string,
             SMTP_FROM: process.env.SMTP_FROM as string,
+        },
+        WALLET: {
+            INITIAL_BALANCE: process.env.INITIAL_BALANCE as string,
+            COMMISSION_RATE: process.env.COMMISSION_RATE as string,
         },
     };
 };

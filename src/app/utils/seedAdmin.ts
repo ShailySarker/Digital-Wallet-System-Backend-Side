@@ -12,16 +12,17 @@ export const seedAdmin = async () => {
         const isAdminExist = await User.findOne({ email: envVars.ADMIN.ADMIN_EMAIL });
 
         if (isAdminExist) {
-            console.log(" Admin Already Exists!");
+            console.log("Admin Already Exists!");
             return;
         }
 
-        // console.log("Trying to create  Admin...");
-        const hashedPassword = await bcryptjs.hash(envVars.ADMIN.ADMIN_PASSWORD, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
+       const hashedPassword = await bcryptjs.hash(envVars.ADMIN.ADMIN_PASSWORD, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
 
         const payload: IUser = {
             name: "Admin",
             role: Role.ADMIN,
+            phone: envVars.ADMIN.ADMIN_PHONE,
+            nidNumber: envVars.ADMIN.ADMIN_NID_NUMBER,
             email: envVars.ADMIN.ADMIN_EMAIL,
             password: hashedPassword,
             isVerified: true,

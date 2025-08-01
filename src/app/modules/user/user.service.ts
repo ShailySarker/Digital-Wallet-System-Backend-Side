@@ -7,52 +7,93 @@ import bcryptjs from "bcryptjs";
 import { QueryBuilder } from "../../utils/QueryBuilder";
 import { userSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
+import { Wallet } from "../wallet/wallet.model";
 
+const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => {
+    const session = await User.startSession();
+    session.startTransaction();
+    
+    try {
+        // console.log("payload...........", payload);
+        const { email, phone, role, password, nidNumber, ...rest } = payload;
 
-const createUser = async (payload: Partial<IUser>) => {
+        // Validation checks
+        if (!email || !phone || !role || !password || !nidNumber) {
+            throw new AppError(status.BAD_REQUEST, 'Missing required fields');
+        }
 
-    const { email, phone, role, password, ...rest } = payload;
+        if (role !== Role.USER && role !== Role.AGENT) {
+            throw new AppError(status.BAD_REQUEST, 'Only user and agent can create their account');
+        }
 
-    const availableEmail = await User.findOne({ email });
-    if (availableEmail) {
-        throw new AppError(status.BAD_REQUEST, "Email is already used");
-    }
+        // Check for existing records
+        const [existingEmail, existingPhone, existingNid] = await Promise.all([
+            User.findOne({ email }),
+            User.findOne({ phone }),
+            User.findOne({ nidNumber })
+        ]);
 
-    const availablePhoneNumber = await User.findOne({ phone });
-    if (availablePhoneNumber) {
-        throw new AppError(status.BAD_REQUEST, "Phone number is already used");
-    }
+        if (existingEmail) {
+            throw new AppError(status.BAD_REQUEST, 'Email is already used');
+        }
+        if (existingPhone) {
+            throw new AppError(status.BAD_REQUEST, 'Phone number is already used');
+        }
+        if (existingNid) {
+            throw new AppError(status.BAD_REQUEST, 'NID number is already used');
+        }
+        
+        // Hash password
+        const hashedPassword = await bcryptjs.hash(password, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
 
-    if (role !== (Role.USER || Role.AGENT)) {
-        throw new AppError(status.BAD_REQUEST, "Only user and agent can create their account");
-    }
-
-    const hashedPassword = await bcryptjs.hash(password as string, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
-
-    if (role === Role.USER) {
-        // wallet create 
-        const user = await User.create({
-            email, phone, role,
+        // Create user
+        const userData = {
+            email,
+            phone,
+            role,
+            nidNumber,
             password: hashedPassword,
+            //   isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
+            commissionRate: role === Role.AGENT ? Number(envVars.WALLET.COMMISSION_RATE) : undefined,
+            isDeleted: false,
             ...rest
-        });
-        return user;
-    }
-    else if (role === Role.AGENT) {
-        // commission rate set
-        const user = await User.create({
-            email, phone, role,
-            password: hashedPassword,
-            ...rest
-        });
-        return user;
-    }
-    else {
-        throw new AppError(status.BAD_REQUEST, "Why are you here?");
+        };
 
-    }
+        const user = await User.create([userData], { session });
+        if (!user || user.length === 0) {
+            throw new AppError(status.INTERNAL_SERVER_ERROR, 'User creation failed');
+        }
 
+        // Create wallet
+        const wallet = await Wallet.create([{
+            user: user[0]._id,
+            balance: Number(envVars.WALLET.INITIAL_BALANCE),
+            role: role
+        }], { session });
+
+        // Update user with wallet reference
+        const updatedUser = await User.findByIdAndUpdate(
+            user[0]._id,
+            { wallet: wallet[0]._id },
+            { new: true, session }
+        );
+
+        if (!updatedUser) {
+            throw new AppError(status.INTERNAL_SERVER_ERROR, 'Failed to update user with wallet');
+        }
+
+        await session.commitTransaction();
+        session.endSession();
+
+        return { user: updatedUser.toObject() };
+
+    } catch (error) {
+        await session.abortTransaction();
+        session.endSession();
+        throw error;
+    }
 };
+
 const getMyProfile = async (userId: string) => {
     const user = await User.findById(userId).select("-password");
     return {

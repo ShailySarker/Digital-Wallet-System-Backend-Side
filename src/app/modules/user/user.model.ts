@@ -26,8 +26,9 @@ const userSchema = new Schema<IUser>(
             required: true,
         },
         nidNumber: {
-            type: Number,
-            required: true
+            type: String,
+            required: true,
+            unique: true
         },
         role: {
             type: String,

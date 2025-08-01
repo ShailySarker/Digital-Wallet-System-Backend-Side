@@ -13,9 +13,9 @@ import { sendEmail } from "../../utils/sendEmail";
 
 const credentialsLogin = async (payload: Partial<IUser>) => {
 
-    const { email, password } = payload;
+    const { phone, password } = payload;
 
-    const isUserExist = await User.findOne({ email });
+    const isUserExist = await User.findOne({ phone });
 
     if (!isUserExist) {
         throw new AppError(status.BAD_REQUEST, "User does not exist");
@@ -79,11 +79,14 @@ const forgotPassword = async (email: string) => {
     if (!isUserExist) {
         throw new AppError(status.BAD_REQUEST, "User does not exist");
     }
-    if (!isUserExist.isVerified) {
-        throw new AppError(status.BAD_REQUEST, "User is not verified");
-    }
+    // if (!isUserExist.isVerified) {
+    //     throw new AppError(status.BAD_REQUEST, "User is not verified");
+    // }
     if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
         throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
+    }
+    if (isUserExist.isApproved === IsApproved.SUSPENDED) {
+        throw new AppError(status.BAD_REQUEST, "Your are suspended");
     }
     if (isUserExist.isDeleted) {
         throw new AppError(status.BAD_REQUEST, "User is deleted");
