@@ -3,6 +3,7 @@ import cors from "cors";
 import notFound from "./app/middlewares/notFound";
 import { router } from "./app/routes";
 import cookieParser from "cookie-parser";
+import { globalErrorHandler } from "./app/middlewares/globalErrorHandler";
 
 const app = express();
 
@@ -18,6 +19,9 @@ app.get("/", (req: Request, res: Response) => {
         message: "Welcome to Digital Wallet System!"
     })
 });
+
+// global error handler
+app.use(globalErrorHandler);
 
 // not found route
 app.use(notFound);

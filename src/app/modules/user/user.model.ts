@@ -1,5 +1,5 @@
 import { model, Schema } from "mongoose";
-import { IsActive, IUser, Role } from "./user.interface";
+import { IsActive, IsApproved, IUser, Role } from "./user.interface";
 
 const userSchema = new Schema<IUser>(
     {
@@ -45,8 +45,9 @@ const userSchema = new Schema<IUser>(
             default: false
         },
         isApproved: {
-            type: Boolean,
-            default: false
+            type: String,
+            enum: Object.values(IsApproved),
+            default: IsApproved.PENDING
         },
         wallet: {
             type: Schema.Types.ObjectId,

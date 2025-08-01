@@ -20,7 +20,8 @@ export const createUserZodSchema = z.object({
             message: "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
         }),
     role: z
-        .enum(Object.values(Role) as [string]),
+        .enum(Object.values(Role) as [string])
+        .default(Role.USER),
     nidNumber: z
         .coerce.number({ message: 'nidNumber must be a number' })
         .refine((val) => {
@@ -31,12 +32,15 @@ export const createUserZodSchema = z.object({
         }),
     isActive: z
         .enum(Object.values(IsActive) as [string])
+        .default(IsActive.ACTIVE)
         .optional(),
     isVerified: z
         .boolean({ message: "isVerified must be boolean" })
+        .default(false)
         .optional(),
     isApproved: z
         .enum(Object.values(IsApproved) as [string])
+        .default(IsApproved.PENDING)
         .optional(),
     commissionRate: z
         .number({ message: "commissionRate must be number" })
