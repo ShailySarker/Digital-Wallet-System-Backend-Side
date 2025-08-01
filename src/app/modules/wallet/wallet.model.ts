@@ -1,7 +1,6 @@
 import { model, Schema } from "mongoose";
-import { IWallet } from "./wallet.interface";
+import { IWallet, Wallet_Status } from "./wallet.interface";
 import { envVars } from "../../config/env";
-import { Role } from "../user/user.interface";
 
 const walletSchema = new Schema<IWallet>(
   {
@@ -16,18 +15,15 @@ const walletSchema = new Schema<IWallet>(
       required: true,
       default: Number(envVars.WALLET.INITIAL_BALANCE),
     },
-    role: {
+    status: {
       type: String,
-      enum: [Role.USER, Role.AGENT],
-      required: true,
-    },
-    isBlocked: {
-      type: Boolean,
-      default: false,
+      enum: Object.values(Wallet_Status),
+      default: Wallet_Status.UNBLOCK,
     },
   },
   {
     timestamps: true,
+    versionKey: false
   }
 );
 

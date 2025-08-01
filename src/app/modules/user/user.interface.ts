@@ -15,8 +15,8 @@ export enum IsActive {
 
 export enum IsApproved {
     PENDING = "PENDING",
-    APPROVED = "APPROVED",
-    SUSPENDED = "SUSPENDED"
+    APPROVE = "APPROVE",
+    SUSPEND = "SUSPEND"
 };
 
 export interface IUser {
