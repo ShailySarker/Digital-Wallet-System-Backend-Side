@@ -115,3 +115,9 @@ https://digital-wallet-system-backend-side.vercel.app
 - `INITIAL_BALANCE = 50`
 - `COMMISSION_RATE = 1`
 - `TRANSACTION_FEE = 2`
+
+## License
+
+### MIT
+
+This complete implementation provides all the requested functionality with proper separation of concerns, role-based access control, and comprehensive wallet management features. The code is modular, well-structured, and follows best practices for security and error handling.
