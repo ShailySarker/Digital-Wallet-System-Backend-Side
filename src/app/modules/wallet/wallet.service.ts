@@ -8,9 +8,9 @@ import { Transaction_Status, Transaction_Type } from "../transaction/transaction
 import { envVars } from "../../config/env";
 import mongoose from "mongoose";
 
-const getSingleWallet = async (userId: string) => {
+const getSingleWallet = async (walletId: string) => {
 
-    const wallet = await Wallet.findOne({ user: userId });
+    const wallet = await Wallet.findById(walletId);
     if (!wallet) {
         throw new AppError(status.NOT_FOUND, "Wallet is not found");
     }

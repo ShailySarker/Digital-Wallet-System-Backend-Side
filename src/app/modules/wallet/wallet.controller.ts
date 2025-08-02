@@ -7,8 +7,8 @@ import { sendResponse } from "../../utils/sendResponse";
 
 const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
 
-    const id = req.params.id;
-    const result = await WalletServices.getSingleWallet(id);
+    const walletId = req.params.id;
+    const result = await WalletServices.getSingleWallet(walletId);
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
