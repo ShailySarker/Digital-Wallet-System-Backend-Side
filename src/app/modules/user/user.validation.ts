@@ -29,10 +29,10 @@ export const createUserZodSchema = z.object({
         .enum(Object.values(IsActive) as [string])
         .default(IsActive.ACTIVE)
         .optional(),
-    isVerified: z
-        .boolean({ message: "isVerified must be boolean" })
-        .default(false)
-        .optional(),
+    // isVerified: z
+    //     .boolean({ message: "isVerified must be boolean" })
+    //     .default(false)
+    //     .optional(),
     isApproved: z
         .enum(Object.values(IsApproved) as [string])
         .default(IsApproved.PENDING)
@@ -45,6 +45,7 @@ export const createUserZodSchema = z.object({
         .optional(),
     isDeleted: z
         .boolean({ message: "isDeleted must be boolean" })
+        .default(false)
         .optional()
 });
 
@@ -72,7 +73,6 @@ export const updateUserZodSchema = z.object({
         .optional(),
     role: z
         .enum(Object.values(Role) as [string])
-        .default(Role.USER)
         .optional(),
     nidNumber: z
         .string({ message: 'nidNumber must be a string of digits' })
@@ -80,15 +80,13 @@ export const updateUserZodSchema = z.object({
         .optional(),
     isActive: z
         .enum(Object.values(IsActive) as [string])
-        .default(IsActive.ACTIVE)
         .optional(),
-    isVerified: z
-        .boolean({ message: "isVerified must be boolean" })
-        .default(false)
-        .optional(),
+    // isVerified: z
+    //     .boolean({ message: "isVerified must be boolean" })
+    //     .default(false)
+    //     .optional(),
     isApproved: z
         .enum(Object.values(IsApproved) as [string])
-        .default(IsApproved.PENDING)
         .optional(),
     commissionRate: z
         .number({ message: "commissionRate must be number" })

@@ -29,7 +29,7 @@ export interface IUser {
     role: Role;
     wallet?: Types.ObjectId;//user 
     isActive?: IsActive; //for user set admin
-    isVerified?: boolean;//email or phone otp verification
+    // isVerified?: boolean;//email or phone otp verification
     isApproved?: IsApproved;//for agent set admin
     commissionRate?: number;//for agent set admin
     isDeleted?: boolean;//set admin

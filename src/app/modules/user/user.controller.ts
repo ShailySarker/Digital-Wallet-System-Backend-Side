@@ -7,14 +7,14 @@ import status from "http-status";
 import { JwtPayload } from "jsonwebtoken";
 
 const createUser = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
-    const user = await UserServices.createUser(req.body);
+    const result = await UserServices.createUser(req.body);
 
     sendResponse(res, {
         success: true,
         statusCode: status.CREATED,
         message: "User created successfully",
-        data: user,
-    })
+        data: result.user,
+    });
 });
 
 const getMyProfile = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
@@ -39,6 +39,28 @@ const getAllCategoryUser = catchAsync(async (req: Request, res: Response, next: 
         message: "All users retrieved successfully",
         data: result.data,
         meta: result.meta
+    });
+});
+
+const getAllUsers = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserServices.getAllUsers();
+
+    sendResponse(res, {
+        success: true,
+        statusCode: status.OK,
+        message: "All users info retrieved successfully",
+        data: result.users
+    });
+});
+
+const getAllAgents = catchAsync(async (req: Request, res: Response, next: NextFunction) => {
+    const result = await UserServices.getAllAgents();
+
+    sendResponse(res, {
+        success: true,
+        statusCode: status.OK,
+        message: "All agents info retrieved successfully",
+        data: result.users
     });
 });
 
@@ -73,6 +95,8 @@ export const UserControllers = {
     createUser,
     getMyProfile,
     getAllCategoryUser,
+    getAllUsers,
+    getAllAgents,
     getSingleUser,
     updateUser
 };

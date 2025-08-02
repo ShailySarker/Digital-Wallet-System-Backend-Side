@@ -10,6 +10,7 @@ import { userSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
 import { Wallet } from "../wallet/wallet.model";
 
+
 const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => {
     const session = await User.startSession();
     session.startTransaction();
@@ -24,7 +25,7 @@ const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => 
         }
 
         if (role !== Role.USER && role !== Role.AGENT) {
-            throw new AppError(status.BAD_REQUEST, 'Only user and agent can create their account');
+            throw new AppError(status.BAD_REQUEST, 'Only user and agent can create their own account. Only admin have the access to make anyone as ADMIN');
         }
 
         // Check for existing records
@@ -54,7 +55,7 @@ const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => 
             role,
             nidNumber,
             password: hashedPassword,
-            //   isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
+            // isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
             commissionRate: role === Role.AGENT ? Number(envVars.WALLET.COMMISSION_RATE) : undefined,
             isDeleted: false,
             ...rest
@@ -86,7 +87,8 @@ const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => 
         await session.commitTransaction();
         session.endSession();
 
-        return { user: updatedUser.toObject() };
+        return { user: updatedUser };
+        // return { user: updatedUser.toObject() };
 
     } catch (error: any) {
         await session.abortTransaction();
@@ -123,6 +125,24 @@ const getAllCategoryUser = async (query: Record<string, string>) => {
     }
 };
 
+const getAllUsers = async () => {
+
+    const users = await User.find({ role: 'USER' }).select('-password');
+
+    return {
+        users
+    }
+};
+
+const getAllAgents = async () => {
+
+    const users = await User.find({ role: 'AGENT' }).select('-password');
+
+    return {
+        users
+    }
+};
+
 const getSingleUser = async (id: string) => {
     const user = await User.findById(id).select("-password");
     return {
@@ -131,22 +151,26 @@ const getSingleUser = async (id: string) => {
 };
 const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken: JwtPayload) => {
 
+    console.log("payload------", payload);
+    console.log("decodedToken------", decodedToken);
+
     const isUserExist = await User.findById(userId);
 
     if (!isUserExist) {
         throw new AppError(status.NOT_FOUND, "User Not Found")
     }
 
-    if (payload.role) {
+    if (payload.isActive || payload.isDeleted || payload.isApproved || payload.commissionRate) {
+
         if (decodedToken.role === Role.USER || decodedToken.role === Role.AGENT) {
-            throw new AppError(status.FORBIDDEN, "You are not authorized");
+            throw new AppError(status.FORBIDDEN, `${decodedToken.role} are not authorized for updating - isActive | isApproved | isDeleted | commissionRate`);
         }
     }
 
-    if (payload.isActive || payload.isDeleted || payload.isVerified || payload.isApproved || payload.commissionRate || payload.wallet) {
+    if (payload.name || payload.email || payload.phone || payload.nidNumber || payload.password) {
 
-        if (decodedToken.role === Role.USER || decodedToken.role === Role.AGENT) {
-            throw new AppError(status.FORBIDDEN, "You are not authorized");
+        if (decodedToken.role === Role.ADMIN) {
+            throw new AppError(status.FORBIDDEN, `${decodedToken.role} are not authorized for updating USER or AGENT - name | email | phone | password | nidNumber`);
         }
     }
 
@@ -164,6 +188,8 @@ export const UserServices = {
     createUser,
     getMyProfile,
     getAllCategoryUser,
+    getAllUsers,
+    getAllAgents,
     getSingleUser,
     updateUser
 };
