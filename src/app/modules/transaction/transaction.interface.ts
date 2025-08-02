@@ -21,4 +21,5 @@ export interface ITransaction {
     commission?: number;
     type: Transaction_Type;
     status: Transaction_Status;
+    initiatedBy: Types.ObjectId;
 };

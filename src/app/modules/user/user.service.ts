@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import status from "http-status";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
@@ -87,7 +88,7 @@ const createUser = async (payload: Partial<IUser>): Promise<{ user: IUser }> => 
 
         return { user: updatedUser.toObject() };
 
-    } catch (error) {
+    } catch (error: any) {
         await session.abortTransaction();
         session.endSession();
         throw error;

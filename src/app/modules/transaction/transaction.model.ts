@@ -15,14 +15,19 @@ const transactionSchema = new Schema<ITransaction>(
         },
         amount: {
             type: Number,
-            required: true
+            required: true,
+            min: 0
         },
         fee: {
             type: Number,
-            required: true
+            required: true,
+            default: 0,
+            min: 0
         },
         commission: {
-            type: Number
+            type: Number,
+            default: 0,
+            min: 0
         },
         type: {
             type: String,
@@ -33,6 +38,11 @@ const transactionSchema = new Schema<ITransaction>(
             type: String,
             enum: Object.values(Transaction_Status),
             default: Transaction_Status.SUCCESS
+        },
+        initiatedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
         },
     },
     {

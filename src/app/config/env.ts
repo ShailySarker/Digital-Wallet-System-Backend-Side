@@ -34,6 +34,7 @@ interface EnvConfig {
     WALLET: {
         INITIAL_BALANCE: string;
         COMMISSION_RATE: string;
+        TRANSACTION_FEE: string;
     };
 };
 
@@ -60,6 +61,7 @@ const loadEnvVariables = (): EnvConfig => {
         "SMTP_FROM",
         "INITIAL_BALANCE",
         "COMMISSION_RATE",
+        "TRANSACTION_FEE",
     ];
 
     requiredEnvVariables.forEach(key => {
@@ -102,6 +104,7 @@ const loadEnvVariables = (): EnvConfig => {
         WALLET: {
             INITIAL_BALANCE: process.env.INITIAL_BALANCE as string,
             COMMISSION_RATE: process.env.COMMISSION_RATE as string,
+            TRANSACTION_FEE: process.env.TRANSACTION_FEE as string,
         },
     };
 };
