@@ -1,7 +1,7 @@
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { Transaction } from "./transaction.model";
-import { User } from "../user/user.model";
+import { Wallet } from "../wallet/wallet.model";
 
 
 const getAllTransactions = async () => {
@@ -14,35 +14,29 @@ const getAllTransactions = async () => {
     return transactions;
 };
 
-const getMyTransactions = async (userId: string) => {
+const getMyTransactionsHistory = async (userId: string) => {
 
-    const user = await User.findById(userId);
-    if (!user) {
-        throw new AppError(status.NOT_FOUND, 'User is not found');
+    const wallet = await Wallet.findOne({ user: userId });
+    if (!wallet) {
+        throw new AppError(status.NOT_FOUND, "No transaction are found");
     }
 
-    const Transactions = await Transaction.findOne({ user: userId });
-    if (!Transactions) {
-        throw new AppError(status.NOT_FOUND, "Transactions are not found");
-    }
+    const transactions = await Transaction.find({
+        $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
+    })
+        .sort({ createdAt: -1 })
+        .populate('initiatedBy', 'phone role');
 
-    return Transactions;
+    return transactions;
 };
 
 const getAgentCommissionHistory = async (agentId: string) => {
-
-    const agent = await User.findById(agentId);
-    if (!agent) {
-        throw new AppError(status.NOT_FOUND, 'Agent is not found');
-    }
 
     const transactions = await Transaction.find({
         initiatedBy: agentId,
         commission: { $gt: 0 }
     })
-        .sort({ createdAt: -1 })
-        .populate('fromWallet', 'user')
-        .populate('toWallet', 'user');;
+        .sort({ createdAt: -1 });
 
     if (!transactions) {
         throw new AppError(status.NOT_FOUND, "Transactions are not found");
@@ -64,7 +58,7 @@ const getSingleTransaction = async (transactionId: string) => {
 
 export const TransactionServices = {
     getAllTransactions,
-    getMyTransactions,
+    getMyTransactionsHistory,
     getAgentCommissionHistory,
     getSingleTransaction
 }

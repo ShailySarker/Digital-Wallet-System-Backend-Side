@@ -3,6 +3,7 @@ import { catchAsync } from "../../utils/catchAsync";
 import { TransactionServices } from "./transaction.service";
 import { sendResponse } from "../../utils/sendResponse";
 import status from "http-status";
+import { JwtPayload } from "jsonwebtoken";
 
 const getAllTransactions = catchAsync(async (req: Request, res: Response) => {
 
@@ -15,10 +16,10 @@ const getAllTransactions = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const getMyTransactions = catchAsync(async (req: Request, res: Response) => {
+const getMyTransactionsHistory = catchAsync(async (req: Request, res: Response) => {
 
-    const user = req.body;
-    const result = await TransactionServices.getMyTransactions(user?._id);
+    const user = req.user as JwtPayload;
+    const result = await TransactionServices.getMyTransactionsHistory(user.userId);
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
@@ -29,7 +30,7 @@ const getMyTransactions = catchAsync(async (req: Request, res: Response) => {
 
 const getAgentCommissionHistory = catchAsync(async (req: Request, res: Response) => {
 
-    const agentId = req.user?._id;
+    const agentId = req.user.userId;
     const result = await TransactionServices.getAgentCommissionHistory(agentId);
     sendResponse(res, {
         statusCode: status.OK,
@@ -54,7 +55,7 @@ const getSingleTransaction = catchAsync(async (req: Request, res: Response) => {
 
 export const TransactionControllers = {
     getAllTransactions,
-    getMyTransactions,
+    getMyTransactionsHistory,
     getAgentCommissionHistory,
     getSingleTransaction
 }
