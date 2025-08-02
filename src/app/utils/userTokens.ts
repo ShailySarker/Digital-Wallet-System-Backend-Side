@@ -36,7 +36,7 @@ export const createNewAccessTokenWithRefreshToken = async (refreshToken: string)
     if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
         throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
     }
-    if (isUserExist.isApproved === IsApproved.SUSPENDED) {
+    if (isUserExist.isApproved === IsApproved.SUSPEND) {
         throw new AppError(status.BAD_REQUEST, `Agent is ${isUserExist.isApproved}`);
     }
     if (isUserExist.isDeleted) {

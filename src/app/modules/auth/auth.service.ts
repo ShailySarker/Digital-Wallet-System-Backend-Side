@@ -23,11 +23,11 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
         throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
     }
-    if (isUserExist.isApproved === IsApproved.SUSPENDED) {
+    if (isUserExist.isApproved === IsApproved.SUSPEND) {
         throw new AppError(status.BAD_REQUEST, `Agent is ${isUserExist.isApproved}`);
     }
     if (isUserExist.isDeleted) {
-        throw new AppError(status.BAD_REQUEST, "User is deleted");
+        throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is deleted`);
     }
 
     const isPasswordMatched = await bcryptjs.compare(password as string, isUserExist.password as string);
@@ -85,7 +85,7 @@ const forgotPassword = async (email: string) => {
     if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
         throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
     }
-    if (isUserExist.isApproved === IsApproved.SUSPENDED) {
+    if (isUserExist.isApproved === IsApproved.SUSPEND) {
         throw new AppError(status.BAD_REQUEST, "Your are suspended");
     }
     if (isUserExist.isDeleted) {

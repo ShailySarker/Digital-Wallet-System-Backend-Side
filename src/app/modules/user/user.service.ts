@@ -151,8 +151,8 @@ const getSingleUser = async (id: string) => {
 };
 const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken: JwtPayload) => {
 
-    console.log("payload------", payload);
-    console.log("decodedToken------", decodedToken);
+    // console.log("payload------", payload);
+    // console.log("decodedToken------", decodedToken);
 
     const isUserExist = await User.findById(userId);
 
@@ -175,7 +175,7 @@ const updateUser = async (userId: string, payload: Partial<IUser>, decodedToken:
     }
 
     if (payload.password) {
-        payload.password = await bcryptjs.hash(payload.password, envVars.BCRYPT.BCRYPT_SALT_ROUND);
+        payload.password = await bcryptjs.hash(payload.password, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
     }
 
     const newUpdatedUser = await User.findByIdAndUpdate(userId, payload, { new: true, runValidators: true });
