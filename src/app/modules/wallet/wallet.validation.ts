@@ -1,7 +1,7 @@
 import z from "zod";
 import { Wallet_Status } from "./wallet.interface";
 
-export const blockWalletValidation = z.object({
+export const walletBlockingOrUnblockingValidation = z.object({
     status: z
         .enum(Object.values(Wallet_Status) as [string])
         .default(Wallet_Status.UNBLOCK)
@@ -10,7 +10,9 @@ export const blockWalletValidation = z.object({
 export const sendMoneyValidation = z.object({
     amount: z
         .number({ message: "amount must be number" })
-        .positive({ message: "amount must be positive number" })
+        .positive({ message: "amount must be positive number" }),
+    recipientId: z
+        .string({ message: "recipientId must be string" })
 });
 
 export const depositMoneyValidation = z.object({
@@ -28,11 +30,15 @@ export const withdrawMoneyValidation = z.object({
 export const cashInValidation = z.object({
     amount: z
         .number({ message: "amount must be number" })
-        .positive({ message: "amount must be positive number" })
+        .positive({ message: "amount must be positive number" }),
+    userId: z
+        .string({ message: "userId must be string" })
 });
 
 export const cashOutValidation = z.object({
     amount: z
         .number({ message: "amount must be number" })
-        .positive({ message: "amount must be positive number" })
+        .positive({ message: "amount must be positive number" }),
+    userId: z
+        .string({ message: "userId must be string" })
 });

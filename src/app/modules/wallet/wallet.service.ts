@@ -2,21 +2,11 @@
 import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { Wallet } from "./wallet.model";
-import { Wallet_Status } from "./wallet.interface";
+import { IWallet, Wallet_Status } from "./wallet.interface";
 import { Transaction } from "../transaction/transaction.model";
 import { Transaction_Status, Transaction_Type } from "../transaction/transaction.interface";
 import { envVars } from "../../config/env";
 import mongoose from "mongoose";
-
-const getSingleWallet = async (walletId: string) => {
-
-    const wallet = await Wallet.findById(walletId);
-    if (!wallet) {
-        throw new AppError(status.NOT_FOUND, "Wallet is not found");
-    }
-
-    return wallet;
-};
 
 const getMyWallet = async (userId: string) => {
 
@@ -38,18 +28,18 @@ const getAllWallets = async () => {
     return wallets;
 };
 
-const blockWallet = async (walletId: string) => {
+const walletBlockingOrUnblocking = async (walletId: string, payload: Partial<IWallet>) => {
 
     const wallet = await Wallet.findById(walletId);
     if (!wallet) {
         throw new AppError(status.NOT_FOUND, "Wallet is not found");
     }
 
-    if (wallet.status === Wallet_Status.BLOCK) {
+    if (payload.status === wallet.status) {
         throw new AppError(status.NOT_FOUND, "Wallet is already blocked");
     }
 
-    wallet.status = Wallet_Status.BLOCK;
+    wallet.status = payload.status;
     await wallet.save();
 
     return wallet;
@@ -209,10 +199,13 @@ const sendMoney = async (senderId: string, recipientId: string, amount: number) 
 
         await session.commitTransaction();
         session.endSession();
+        // return {
+        //     newBalance: senderWallet.balance,
+        // };
         return {
-            newBalance: senderWallet.balance,
+            senderWallet: senderWallet,
+            recipientWallet: recipientWallet
         };
-
     } catch (error: any) {
         await session.abortTransaction();
         session.endSession();
@@ -279,7 +272,11 @@ const cashIn = async (agentId: string, userId: string, amount: number) => {
 
         await session.commitTransaction();
         session.endSession();
-        return { newBalance: userWallet.balance };
+        // return { newBalance: userWallet.balance };
+        return {
+            agentWallet: agentWallet,
+            userWallet: userWallet
+        };
 
     } catch (error: any) {
         await session.abortTransaction();
@@ -352,8 +349,13 @@ const cashOut = async (userId: string, agentId: string, amount: number) => {
         );
 
         await session.commitTransaction();
+        // return {
+        //     newBalance: userWallet.balance,
+        // };
+
         return {
-            newBalance: userWallet.balance,
+            agentWallet: agentWallet,
+            userWallet: userWallet
         };
 
     } catch (error: any) {
@@ -363,13 +365,22 @@ const cashOut = async (userId: string, agentId: string, amount: number) => {
     }
 };
 
+const getSingleWallet = async (walletId: string) => {
+
+    const wallet = await Wallet.findById(walletId);
+    if (!wallet) {
+        throw new AppError(status.NOT_FOUND, "Wallet is not found");
+    }
+
+    return wallet;
+};
 
 
 export const WalletServices = {
     getSingleWallet,
     getMyWallet,
     getAllWallets,
-    blockWallet,
+    walletBlockingOrUnblocking,
     depositMoney,
     withdrawMoney,
     sendMoney,

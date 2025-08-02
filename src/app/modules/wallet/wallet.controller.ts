@@ -3,6 +3,7 @@ import status from "http-status";
 import { WalletServices } from "./wallet.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
+import { JwtPayload } from "jsonwebtoken";
 
 
 const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
@@ -19,13 +20,14 @@ const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
 
 const getMyWallet = catchAsync(async (req: Request, res: Response) => {
 
-    const user = req.body;
-    const result = await WalletServices.getMyWallet(user?._id);
+    const user = req.user as JwtPayload;
+    const result = await WalletServices.getMyWallet(user.userId);
+
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
-        message: "My wallet retrieved successfully",
-        data: result,
+        message: "Your wallet retrieved successfully",
+        data: result
     });
 });
 
@@ -40,9 +42,10 @@ const getAllWallets = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
-const blockWallet = catchAsync(async (req: Request, res: Response) => {
+const walletBlockingOrUnblocking = catchAsync(async (req: Request, res: Response) => {
     const walletId = req.params.id;
-    const result = await WalletServices.blockWallet(walletId);
+    const body = req.body;
+    const result = await WalletServices.walletBlockingOrUnblocking(walletId, body);
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
@@ -73,15 +76,14 @@ const withdrawMoney = catchAsync(async (req: Request, res: Response) => {
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
-        message: "Money withdrawn successfully",
+        message: "Money withdrew successfully",
         data: result,
     });
 });
 
 const sendMoney = catchAsync(async (req: Request, res: Response) => {
     const senderId = req.user?.userId;
-    const { recipientId, amount } = req.body;
-
+    const { recipientId, amount} = req.body;
     const result = await WalletServices.sendMoney(senderId, recipientId, amount);
     sendResponse(res, {
         statusCode: status.OK,
@@ -91,11 +93,12 @@ const sendMoney = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// agent give -> user take
 const cashIn = catchAsync(async (req: Request, res: Response) => {
-    const senderId = req.user?.userId;
-    const { recipientId, amount } = req.body;
+    const agentId = req.user?.userId;
+    const { userId, amount } = req.body;
 
-    const result = await WalletServices.cashIn(senderId, recipientId, amount);
+    const result = await WalletServices.cashIn(agentId, userId, amount);
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
@@ -104,11 +107,12 @@ const cashIn = catchAsync(async (req: Request, res: Response) => {
     });
 });
 
+// user give -> agent take
 const cashOut = catchAsync(async (req: Request, res: Response) => {
-    const agent = req.user?.userId;
+    const agentId = req.user?.userId;
     const { userId, amount } = req.body;
 
-    const result = await WalletServices.cashOut(agent, userId, amount);
+    const result = await WalletServices.cashOut(userId, agentId, amount);
     sendResponse(res, {
         statusCode: status.OK,
         success: true,
@@ -122,7 +126,7 @@ export const WalletControllers = {
     getSingleWallet,
     getMyWallet,
     getAllWallets,
-    blockWallet,
+    walletBlockingOrUnblocking,
     depositMoney,
     withdrawMoney,
     sendMoney,
