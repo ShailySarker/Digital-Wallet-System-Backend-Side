@@ -29,6 +29,9 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     if (isUserExist.isDeleted) {
         throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is deleted`);
     }
+    if (!isUserExist.isVerified) {
+        throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is not verified`);
+    }
 
     const isPasswordMatched = await bcryptjs.compare(password as string, isUserExist.password as string);
     if (!isPasswordMatched) {

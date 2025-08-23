@@ -36,7 +36,7 @@ const walletBlockingOrUnblocking = async (walletId: string, payload: Partial<IWa
     }
 
     if (payload.status === wallet.status) {
-        throw new AppError(status.NOT_FOUND, "Wallet is already blocked");
+        throw new AppError(status.NOT_FOUND, `Wallet is already ${wallet.status}`);
     }
 
     wallet.status = payload.status;
