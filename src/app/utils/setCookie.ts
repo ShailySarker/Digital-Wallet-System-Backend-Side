@@ -1,5 +1,4 @@
 import { Response } from "express"
-import { envVars } from "../config/env";
 
 export interface AuthTokens {
     accessToken?: string;
@@ -13,7 +12,9 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
             // local
             // secure: false 
             // live link
-            secure: envVars.NODE_ENV === "production",
+            // secure: envVars.NODE_ENV === "production",
+            // sameSite: "none"
+            secure: true,
             sameSite: "none"
 
         });
@@ -25,7 +26,9 @@ export const setAuthCookie = (res: Response, tokenInfo: AuthTokens) => {
             // local
             // secure: false 
             // live link
-            secure: envVars.NODE_ENV === "production",
+            // secure: envVars.NODE_ENV === "production",
+            // sameSite: "none"
+            secure: true,
             sameSite: "none"
         });
     }

@@ -25,7 +25,8 @@ export const seedAdmin = async () => {
             nidNumber: envVars.ADMIN.ADMIN_NID_NUMBER,
             email: envVars.ADMIN.ADMIN_EMAIL,
             password: hashedPassword,
-            isApproved: IsApproved.APPROVE
+            isApproved: IsApproved.APPROVE,
+            isVerified: true
         };
 
         const Admin = await User.create(payload);

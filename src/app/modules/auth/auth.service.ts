@@ -7,147 +7,168 @@ import { User } from "../user/user.model";
 import bcryptjs from "bcryptjs";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { envVars } from "../../config/env";
-import { createNewAccessTokenWithRefreshToken, createUserTokens } from "../../utils/userTokens";
+import {
+  createNewAccessTokenWithRefreshToken,
+  createUserTokens,
+} from "../../utils/userTokens";
 import { sendEmail } from "../../utils/sendEmail";
 
-
 const credentialsLogin = async (payload: Partial<IUser>) => {
+  const { phone, password } = payload;
 
-    const { phone, password } = payload;
+  const isUserExist = await User.findOne({ phone });
 
-    const isUserExist = await User.findOne({ phone });
+  if (!isUserExist) {
+    throw new AppError(status.BAD_REQUEST, "User does not exist");
+  }
+  if (
+    isUserExist.isActive === IsActive.BLOCKED ||
+    isUserExist.isActive === IsActive.INACTIVE
+  ) {
+    throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
+  }
+  if (isUserExist.isApproved === IsApproved.SUSPEND) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `Agent is ${isUserExist.isApproved}`
+    );
+  }
+  if (isUserExist.isDeleted) {
+    throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is deleted`);
+  }
+  if (!isUserExist.isVerified) {
+    throw new AppError(
+      status.BAD_REQUEST,
+      `${isUserExist.role} is not verified`
+    );
+  }
 
-    if (!isUserExist) {
-        throw new AppError(status.BAD_REQUEST, "User does not exist");
-    }
-    if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
-        throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
-    }
-    if (isUserExist.isApproved === IsApproved.SUSPEND) {
-        throw new AppError(status.BAD_REQUEST, `Agent is ${isUserExist.isApproved}`);
-    }
-    if (isUserExist.isDeleted) {
-        throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is deleted`);
-    }
-    if (!isUserExist.isVerified) {
-        throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is not verified`);
-    }
+  const isPasswordMatched = await bcryptjs.compare(
+    password as string,
+    isUserExist.password as string
+  );
+  if (!isPasswordMatched) {
+    throw new AppError(status.BAD_REQUEST, "Incorrect Password");
+  }
 
-    const isPasswordMatched = await bcryptjs.compare(password as string, isUserExist.password as string);
-    if (!isPasswordMatched) {
-        throw new AppError(status.BAD_REQUEST, "Incorrect Password");
-    }
+  const userTokens = await createUserTokens(isUserExist);
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { password: pass, ...rest } = isUserExist.toObject();
 
-    const userTokens = await createUserTokens(isUserExist);
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    const { password: pass, ...rest } = isUserExist.toObject();
-
-    return {
-        accessToken: userTokens.accessToken,
-        refreshToken: userTokens.refreshToken,
-        user: rest,
-    };
+  return {
+    accessToken: userTokens.accessToken,
+    refreshToken: userTokens.refreshToken,
+    user: rest,
+  };
 };
 
 const getNewAccessToken = async (refreshToken: string) => {
+  const newAccessToken = await createNewAccessTokenWithRefreshToken(
+    refreshToken
+  );
 
-    const newAccessToken = await createNewAccessTokenWithRefreshToken(refreshToken);
-
-    return {
-        accessToken: newAccessToken
-    }
+  return {
+    accessToken: newAccessToken,
+  };
 };
 
+const changePassword = async (
+  oldPassword: string,
+  newPassword: string,
+  decodedToken: JwtPayload
+) => {
+  const user = await User.findById(decodedToken.userId);
 
-const changePassword = async (oldPassword: string, newPassword: string, decodedToken: JwtPayload) => {
+  const isOldPasswordMatch = await bcryptjs.compare(
+    oldPassword,
+    user!.password as string
+  );
 
-    const user = await User.findById(decodedToken.userId);
+  if (!isOldPasswordMatch) {
+    throw new AppError(status.UNAUTHORIZED, "Old password does not match");
+  }
 
-    const isOldPasswordMatch = await bcryptjs.compare(oldPassword, user!.password as string)
+  user!.password = await bcryptjs.hash(
+    newPassword,
+    Number(envVars.BCRYPT.BCRYPT_SALT_ROUND)
+  );
 
-    if (!isOldPasswordMatch) {
-        throw new AppError(status.UNAUTHORIZED, "Old password does not match");
-    }
-
-    user!.password = await bcryptjs.hash(newPassword, Number(envVars.BCRYPT.BCRYPT_SALT_ROUND));
-
-    user!.save();
-
+  user!.save();
 };
 
 const forgotPassword = async (email: string) => {
+  const isUserExist = await User.findOne({ email });
 
-    const isUserExist = await User.findOne({ email });
+  if (!isUserExist) {
+    throw new AppError(status.BAD_REQUEST, "User does not exist");
+  }
+  if (!isUserExist.isVerified) {
+      throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is not verified`);
+  }
+  if (
+    isUserExist.isActive === IsActive.BLOCKED ||
+    isUserExist.isActive === IsActive.INACTIVE
+  ) {
+    throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
+  }
+  if (isUserExist.isApproved === IsApproved.SUSPEND) {
+    throw new AppError(status.BAD_REQUEST, "Your are suspended");
+  }
+  if (isUserExist.isDeleted) {
+    throw new AppError(status.BAD_REQUEST, "User is deleted");
+  }
 
-    if (!isUserExist) {
-        throw new AppError(status.BAD_REQUEST, "User does not exist");
-    }
-    // if (!isUserExist.isVerified) {
-    //     throw new AppError(status.BAD_REQUEST, "User is not verified");
-    // }
-    if (isUserExist.isActive === IsActive.BLOCKED || isUserExist.isActive === IsActive.INACTIVE) {
-        throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
-    }
-    if (isUserExist.isApproved === IsApproved.SUSPEND) {
-        throw new AppError(status.BAD_REQUEST, "Your are suspended");
-    }
-    if (isUserExist.isDeleted) {
-        throw new AppError(status.BAD_REQUEST, "User is deleted");
-    }
+  const jwtPayload = {
+    userId: isUserExist._id,
+    email: isUserExist.email,
+    role: isUserExist.role,
+  };
 
-    const jwtPayload = {
-        userId: isUserExist._id,
-        email: isUserExist.email,
-        role: isUserExist.role,
-    };
+  const resetToken = jwt.sign(jwtPayload, envVars.JWT.JWT_ACCESS_SECRET, {
+    expiresIn: "10m",
+  });
 
-    const resetToken = jwt.sign(jwtPayload, envVars.JWT.JWT_ACCESS_SECRET, {
-        expiresIn: "10m"
-    });
+  const resetUILink = `${envVars.FRONTEND.FRONTEND_URL}/reset-password?id=${isUserExist._id}&token=${resetToken}`;
 
-    const resetUILink = `${envVars.FRONTEND.FRONTEND_URL}/reset-password?id=${isUserExist._id}&token=${resetToken}`;
-
-    await sendEmail({
-        to: isUserExist.email,
-        subject: "Password Reset",
-        templateName: "forgetPassword",
-        templateData: {
-            name: isUserExist.name,
-            resetUILink
-        }
-    });
-
+  await sendEmail({
+    to: isUserExist.email,
+    subject: "Password Reset",
+    templateName: "forgetPassword",
+    templateData: {
+      name: isUserExist.name,
+      resetUILink,
+    },
+  });
 };
 
+const resetPassword = async (
+  payload: Record<string, any>,
+  decodedToken: JwtPayload
+) => {
+  if (payload.id !== decodedToken.userId) {
+    throw new AppError(status.UNAUTHORIZED, "You can not reset your password");
+  }
 
-const resetPassword = async (payload: Record<string, any>, decodedToken: JwtPayload) => {
+  const isUserExist = await User.findById(decodedToken.userId);
 
-    if (payload.id !== decodedToken.userId) {
-        throw new AppError(status.UNAUTHORIZED, "You can not reset your password");
-    }
+  if (!isUserExist) {
+    throw new AppError(status.UNAUTHORIZED, "User does not exist");
+  }
 
-    const isUserExist = await User.findById(decodedToken.userId);
+  const hashedPassword = await bcryptjs.hash(
+    payload.newPassword,
+    Number(envVars.BCRYPT.BCRYPT_SALT_ROUND)
+  );
 
-    if (!isUserExist) {
-        throw new AppError(status.UNAUTHORIZED, "User does not exist");
-    }
+  isUserExist.password = hashedPassword;
 
-    const hashedPassword = await bcryptjs.hash(
-        payload.newPassword,
-        Number(envVars.BCRYPT.BCRYPT_SALT_ROUND)
-    );
-
-    isUserExist.password = hashedPassword;
-
-    await isUserExist.save();
-
+  await isUserExist.save();
 };
-
 
 export const AuthServices = {
-    credentialsLogin,
-    getNewAccessToken,
-    changePassword,
-    forgotPassword,
-    resetPassword,
+  credentialsLogin,
+  getNewAccessToken,
+  changePassword,
+  forgotPassword,
+  resetPassword,
 };
