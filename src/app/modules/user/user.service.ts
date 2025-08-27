@@ -6,7 +6,7 @@ import { IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { userSearchableFields } from "./user.constant";
+import { allUserSearchableFields, userSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
 import { Wallet } from "../wallet/wallet.model";
 
@@ -126,6 +126,29 @@ const getAllCategoryUser = async (query: Record<string, string>) => {
   const queryBuilder = new QueryBuilder(User.find(), query);
   const usersData = queryBuilder
     .filter()
+    .search(allUserSearchableFields)
+    .sort()
+    .fields()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    usersData.build(),
+    queryBuilder.getMeta(),
+  ]);
+
+  return {
+    data,
+    meta,
+  };
+};
+
+const getAllUsers = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(
+    User.find({ role: "USER" }).select("-password"),
+    query
+  );
+  const usersData = queryBuilder
+    .filter()
     .search(userSearchableFields)
     .sort()
     .fields()
@@ -142,19 +165,26 @@ const getAllCategoryUser = async (query: Record<string, string>) => {
   };
 };
 
-const getAllUsers = async () => {
-  const users = await User.find({ role: "USER" }).select("-password");
+const getAllAgents = async (query: Record<string, string>) => {
+  const queryBuilder = new QueryBuilder(
+    User.find({ role: "AGENT" }).select("-password"),
+    query
+  );
+  const usersData = queryBuilder
+    .filter()
+    .search(userSearchableFields)
+    .sort()
+    .fields()
+    .paginate();
+
+  const [data, meta] = await Promise.all([
+    usersData.build(),
+    queryBuilder.getMeta(),
+  ]);
 
   return {
-    users,
-  };
-};
-
-const getAllAgents = async () => {
-  const users = await User.find({ role: "AGENT" }).select("-password");
-
-  return {
-    users,
+    data,
+    meta,
   };
 };
 
@@ -207,6 +237,13 @@ const updateUser = async (
     }
   }
 
+  if (payload.email && isUserExist.email !== payload.email) {
+    const existingEmailAddress = await User.findOne({ email: payload.email });
+    if (existingEmailAddress) {
+      throw new AppError(status.FORBIDDEN, "Email address is already exists");
+    }
+    isUserExist.email = payload.email;
+  }
   if (payload.password) {
     payload.password = await bcryptjs.hash(
       payload.password,

@@ -83,10 +83,9 @@ export const updateUserZodSchema = z.object({
     )
     .optional(),
   isActive: z.enum(Object.values(IsActive) as [string]).optional(),
-  // isVerified: z
-  //     .boolean({ message: "isVerified must be boolean" })
-  //     .default(false)
-  //     .optional(),
+  isVerified: z
+      .boolean({ message: "isVerified must be boolean" })
+      .optional(),
   isApproved: z.enum(Object.values(IsApproved) as [string]).optional(),
   commissionRate: z
     .number({ message: "commissionRate must be number" })

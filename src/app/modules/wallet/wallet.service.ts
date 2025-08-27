@@ -61,6 +61,9 @@ const depositMoney = async (userId: string, amount: number) => {
         if (!amount || amount <= 0) {
             throw new AppError(status.BAD_REQUEST, "Amount must be greater than 0");
         }
+        if (amount < 200) {
+            throw new AppError(status.BAD_REQUEST, "Miniumum deposit amount 200 TK");
+        }
 
         wallet.balance += amount;
         await wallet.save({ session });
@@ -104,6 +107,12 @@ const withdrawMoney = async (userId: string, amount: number) => {
         }
         if (!amount || amount <= 0) {
             throw new AppError(status.BAD_REQUEST, "Amount must be greater than 0");
+        }
+        if (amount < 100) {
+            throw new AppError(status.BAD_REQUEST, "Miniumum withdrow amount 100 TK");
+        }
+        if (amount > wallet.balance) {
+            throw new AppError(status.BAD_REQUEST, "Wallet money is not sufficient");
         }
 
         // Update wallet balance
