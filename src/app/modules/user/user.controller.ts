@@ -101,13 +101,11 @@ const updateUser = catchAsync(
     const userId = req.params.id;
     const verifiedToken = req.user;
     const payload = req.body;
-    console.log(userId, verifiedToken, payload);
     const user = await UserServices.updateUser(
       userId,
       payload,
       verifiedToken as JwtPayload
     );
-    console.log(user);
 
     sendResponse(res, {
       success: true,

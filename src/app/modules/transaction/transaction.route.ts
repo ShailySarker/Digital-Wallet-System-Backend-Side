@@ -9,6 +9,7 @@ const router = express.Router();
 router.get("/my-transactions", checkAuth(Role.USER, Role.AGENT), TransactionControllers.getMyTransactionsHistory);
 router.get("/all-transactions", checkAuth(Role.ADMIN), TransactionControllers.getAllTransactions);
 router.get("/commissions", checkAuth(Role.AGENT), TransactionControllers.getAgentCommissionHistory);
+router.get("/agent-stats", checkAuth(Role.AGENT), TransactionControllers.getAgentStats);
 router.get("/:id", checkAuth(...Object.values(Role)), TransactionControllers.getSingleTransaction);
 
 export const TransactionRoutes = router;

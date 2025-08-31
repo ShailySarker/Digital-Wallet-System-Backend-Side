@@ -7,11 +7,11 @@ const transactionSchema = new Schema<ITransaction>(
     {
         fromWallet: {
             type: Schema.Types.ObjectId,
-            ref: "User"
+            ref: "Wallet"
         },
         toWallet: {
             type: Schema.Types.ObjectId,
-            ref: "User"
+            ref: "Wallet"
         },
         amount: {
             type: Number,
