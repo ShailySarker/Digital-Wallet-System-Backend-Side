@@ -4,7 +4,6 @@ import { WalletServices } from "./wallet.service";
 import { catchAsync } from "../../utils/catchAsync";
 import { sendResponse } from "../../utils/sendResponse";
 import { JwtPayload } from "jsonwebtoken";
-import { duelPhoneNumberHandling } from "../../utils/duelPhoneNumberHandling";
 
 const getSingleWallet = catchAsync(async (req: Request, res: Response) => {
   const walletId = req.params.id;
@@ -86,13 +85,7 @@ const sendMoney = catchAsync(async (req: Request, res: Response) => {
   const senderId = req.user?.userId;
   // const { recipientId, amount} = req.body;
   const { phone, amount } = req.body;
-  const user = await duelPhoneNumberHandling(phone);
-  const recipientId = user?._id.toString();
-  const result = await WalletServices.sendMoney(
-    senderId,
-    recipientId as string,
-    amount
-  );
+  const result = await WalletServices.sendMoney(senderId, phone, amount);
   sendResponse(res, {
     statusCode: status.OK,
     success: true,
@@ -104,9 +97,10 @@ const sendMoney = catchAsync(async (req: Request, res: Response) => {
 // agent give -> user take
 const cashIn = catchAsync(async (req: Request, res: Response) => {
   const agentId = req.user?.userId;
-  const { userId, amount } = req.body;
+  // const { userId, amount } = req.body;
+  const { phone, amount } = req.body;
 
-  const result = await WalletServices.cashIn(agentId, userId, amount);
+  const result = await WalletServices.cashIn(agentId, phone, amount);
   sendResponse(res, {
     statusCode: status.OK,
     success: true,
@@ -118,9 +112,9 @@ const cashIn = catchAsync(async (req: Request, res: Response) => {
 // user give -> agent take
 const cashOut = catchAsync(async (req: Request, res: Response) => {
   const agentId = req.user?.userId;
-  const { userId, amount } = req.body;
+  const { phone, amount } = req.body;
 
-  const result = await WalletServices.cashOut(userId, agentId, amount);
+  const result = await WalletServices.cashOut(phone, agentId, amount);
   sendResponse(res, {
     statusCode: status.OK,
     success: true,

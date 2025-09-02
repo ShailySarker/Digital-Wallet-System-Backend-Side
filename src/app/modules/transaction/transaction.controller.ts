@@ -37,7 +37,6 @@ const getMyTransactionsHistory = catchAsync(
   async (req: Request, res: Response) => {
     const query = req.query;
     const user = req.user as JwtPayload;
-    console.log(user.userId);
     const result = await TransactionServices.getMyTransactionsHistory(
       user.userId,
       query as Record<string, string>
@@ -55,15 +54,36 @@ const getMyTransactionsHistory = catchAsync(
 const getAgentCommissionHistory = catchAsync(
   async (req: Request, res: Response) => {
     const agentId = req.user.userId;
-    const result = await TransactionServices.getAgentCommissionHistory(agentId);
+    const query = req.query as Record<string, string>;
+
+    const result = await TransactionServices.getAgentCommissionHistory(
+      agentId,
+      query
+    );
+
     sendResponse(res, {
       statusCode: status.OK,
       success: true,
-      message: "Wallet retrieved successfully",
-      data: result,
+      message: "Commission history retrieved successfully",
+      data: result.data,
+      meta: result.meta,
     });
   }
 );
+
+
+// const getAgentCommissionHistory = catchAsync(
+//   async (req: Request, res: Response) => {
+//     const agentId = req.user.userId;
+//     const result = await TransactionServices.getAgentCommissionHistory(agentId);
+//     sendResponse(res, {
+//       statusCode: status.OK,
+//       success: true,
+//       message: "Wallet retrieved successfully",
+//       data: result,
+//     });
+//   }
+// );
 
 const getSingleTransaction = catchAsync(async (req: Request, res: Response) => {
   const transactionId = req.params.id;

@@ -13,6 +13,7 @@ router.get("/my-profile", checkAuth(...Object.values(Role)), UserControllers.get
 router.get("/all-category-user", checkAuth(Role.ADMIN), UserControllers.getAllCategoryUser);
 router.get("/all-users", checkAuth(Role.ADMIN), UserControllers.getAllUsers);
 router.get("/all-agents", checkAuth(Role.ADMIN), UserControllers.getAllAgents);
+router.get("/get-user", checkAuth(...Object.values(Role)), UserControllers.getSpecificUser);
 router.get("/:id", checkAuth(Role.ADMIN), UserControllers.getSingleUser);
 
 router.patch("/:id", validatedRequest(updateUserZodSchema), checkAuth(...Object.values(Role)), UserControllers.updateUser);//Approve/suspend agent(admin only)

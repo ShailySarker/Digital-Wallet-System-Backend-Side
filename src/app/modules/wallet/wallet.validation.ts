@@ -12,10 +12,9 @@ export const sendMoneyValidation = z.object({
     .number({ message: "amount must be number" })
     .positive({ message: "amount must be positive number" }),
   phone: z
-    .string({ error: "Phone number must be string" })
-    .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
-      message:
-        "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+    .string({ message: "Phone number must be string" })
+    .regex(/^(?:01\d{9})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: 01XXXXXXXXX",
     }),
   // recipientId: z
   //     .string({ message: "recipientId must be string" })
@@ -37,12 +36,22 @@ export const cashInValidation = z.object({
   amount: z
     .number({ message: "amount must be number" })
     .positive({ message: "amount must be positive number" }),
-  userId: z.string({ message: "userId must be string" }),
+  // userId: z.string({ message: "userId must be string" }),
+  phone: z
+    .string({ message: "Phone number must be string" })
+    .regex(/^(?:01\d{9})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: 01XXXXXXXXX",
+    }),
 });
 
 export const cashOutValidation = z.object({
   amount: z
     .number({ message: "amount must be number" })
     .positive({ message: "amount must be positive number" }),
-  userId: z.string({ message: "userId must be string" }),
+  // userId: z.string({ message: "userId must be string" }),
+  phone: z
+    .string({ message: "Phone number must be string" })
+    .regex(/^(?:01\d{9})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: 01XXXXXXXXX",
+    }),
 });

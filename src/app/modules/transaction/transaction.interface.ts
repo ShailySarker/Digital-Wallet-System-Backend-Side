@@ -23,3 +23,10 @@ export interface ITransaction {
     status: Transaction_Status;
     initiatedBy: Types.ObjectId;
 };
+
+export interface QueryOptions {
+  page?: number;
+  limit?: number;
+  sortBy?: "createdAt" | "commission";
+  sortOrder?: "asc" | "desc";
+}

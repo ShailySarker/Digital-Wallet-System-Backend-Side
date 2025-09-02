@@ -2,7 +2,7 @@
 import status from "http-status";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
-import { IUser, Role } from "./user.interface";
+import { IsActive, IUser, Role } from "./user.interface";
 import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 import { QueryBuilder } from "../../utils/QueryBuilder";
@@ -188,12 +188,42 @@ const getAllAgents = async (query: Record<string, string>) => {
   };
 };
 
+const getSpecificUser = async (phone: string) => {
+  
+  const user = await User.findOne({phone}).select("-password");
+
+  if (!user) {
+    throw new AppError(status.NOT_FOUND, "Account not found");
+  }
+  if (user.role !== Role.USER) {
+    throw new AppError(status.NOT_FOUND, "This is not an user account");
+  }
+
+  if (user.isActive !== IsActive.ACTIVE) {
+    throw new AppError(
+      status.NOT_FOUND,
+      "The account is not active!"
+    );
+  }
+  if (!user.isVerified) {
+    throw new AppError(
+      status.NOT_FOUND,
+      "The account is not verified!"
+    );
+  }
+
+  return {
+    data: user,
+  };
+};
+
 const getSingleUser = async (id: string) => {
   const user = await User.findById(id).select("-password");
   return {
     data: user,
   };
 };
+
 const updateUser = async (
   userId: string,
   payload: Partial<IUser>,
@@ -265,6 +295,7 @@ export const UserServices = {
   getAllCategoryUser,
   getAllUsers,
   getAllAgents,
+  getSpecificUser,
   getSingleUser,
   updateUser,
 };

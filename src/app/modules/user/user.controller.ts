@@ -83,6 +83,18 @@ const getAllAgents = catchAsync(
   }
 );
 
+const getSpecificUser = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const phone = req.params;
+    const result = await UserServices.getSpecificUser(phone);
+    sendResponse(res, {
+      success: true,
+      statusCode: status.CREATED,
+      message: "User Retrieved Successfully",
+      data: result.data,
+    });
+  }
+);
 const getSingleUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const id = req.params.id;
@@ -122,6 +134,7 @@ export const UserControllers = {
   getAllCategoryUser,
   getAllUsers,
   getAllAgents,
+  getSpecificUser,
   getSingleUser,
   updateUser,
 };

@@ -16,7 +16,7 @@ export const createUserZodSchema = z.object({
     .regex(/^\d{6}$/, "Password must be string of exactly 6 digits"),
   phone: z
     .string({ message: "Phone number must be string" })
-    .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
+    .regex(/^(?:01\d{9})$/, {
       message:
         "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
     }),
@@ -68,10 +68,9 @@ export const updateUserZodSchema = z.object({
     .min(6, { message: "Password must be at least 8 characters long." })
     .optional(),
   phone: z
-    .string({ message: "Phone Number must be string" })
-    .regex(/^(?:\+8801\d{9}|01\d{9})$/, {
-      message:
-        "Phone number must be valid for Bangladesh. Format: +8801XXXXXXXXX or 01XXXXXXXXX",
+    .string({ message: "Phone number must be string" })
+    .regex(/^(?:01\d{9})$/, {
+      message: "Phone number must be valid for Bangladesh. Format: 01XXXXXXXXX",
     })
     .optional(),
   role: z.enum(Object.values(Role) as [string]).optional(),
@@ -83,9 +82,7 @@ export const updateUserZodSchema = z.object({
     )
     .optional(),
   isActive: z.enum(Object.values(IsActive) as [string]).optional(),
-  isVerified: z
-      .boolean({ message: "isVerified must be boolean" })
-      .optional(),
+  isVerified: z.boolean({ message: "isVerified must be boolean" }).optional(),
   isApproved: z.enum(Object.values(IsApproved) as [string]).optional(),
   commissionRate: z
     .number({ message: "commissionRate must be number" })
