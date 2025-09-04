@@ -274,6 +274,13 @@ const updateUser = async (
     }
     isUserExist.email = payload.email;
   }
+  if (payload.phone && isUserExist.phone !== payload.phone) {
+    const existingEmailAddress = await User.findOne({ phone: payload.phone });
+    if (existingEmailAddress) {
+      throw new AppError(status.FORBIDDEN, "Phone number is already exists");
+    }
+    isUserExist.phone = payload.phone;
+  }
   if (payload.password) {
     payload.password = await bcryptjs.hash(
       payload.password,

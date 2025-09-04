@@ -71,7 +71,6 @@ const getAgentCommissionHistory = catchAsync(
   }
 );
 
-
 // const getAgentCommissionHistory = catchAsync(
 //   async (req: Request, res: Response) => {
 //     const agentId = req.user.userId;
@@ -98,11 +97,21 @@ const getSingleTransaction = catchAsync(async (req: Request, res: Response) => {
 
 const getAgentStats = catchAsync(async (req: Request, res: Response) => {
   const agent = req.user;
-  const result = await TransactionServices.getAgentStats(agent);
+  const result = await TransactionServices.getAgentStats(agent.userId);
   sendResponse(res, {
     statusCode: status.OK,
     success: true,
     message: "Agent stats fetched successfully",
+    data: result,
+  });
+});
+
+const getAdminStats = catchAsync(async (req: Request, res: Response) => {
+  const result = await TransactionServices.getAdminStats();
+  sendResponse(res, {
+    statusCode: status.OK,
+    success: true,
+    message: "Admin stats fetched successfully",
     data: result,
   });
 });
@@ -113,4 +122,5 @@ export const TransactionControllers = {
   getAgentCommissionHistory,
   getSingleTransaction,
   getAgentStats,
+  getAdminStats
 };

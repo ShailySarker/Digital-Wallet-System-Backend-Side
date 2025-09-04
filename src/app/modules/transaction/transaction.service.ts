@@ -2,11 +2,9 @@ import status from "http-status";
 import AppError from "../../errorHelpers/AppError";
 import { Transaction } from "./transaction.model";
 import { Wallet } from "../wallet/wallet.model";
-import { QueryBuilder } from "../../utils/QueryBuilder";
-import { myTransactionsSearchableFields } from "./transaction.constant";
-import { JwtPayload } from "jsonwebtoken";
-import mongoose from "mongoose";
-import { QueryOptions } from "./transaction.interface";
+import { QueryOptions } from "mongoose";
+import { User } from "../user/user.model";
+// import { QueryOptions } from "./transaction.interface";
 
 const getAllTransactions = async (query: Record<string, string>) => {
   // Build the base filter for database-level filtering
@@ -228,24 +226,147 @@ const getAllTransactions = async (query: Record<string, string>) => {
 // };
 // };
 
+// const getMyTransactionsHistory = async (
+//   userId: string,
+//   query: Record<string, string> = {}
+// ) => {
+//   const wallet = await Wallet.findOne({ user: userId });
+
+//   if (!wallet) {
+//     throw new AppError(status.NOT_FOUND, "No wallet is found");
+//   }
+
+//   // Create the initial filter
+//   const initialFilter = {
+//     $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
+//   };
+
+//   // Create base query with initial filter
+//   const myTransaction = Transaction.find(initialFilter)
+//     .sort({ createdAt: -1 })
+//     .populate([
+//       {
+//         path: "fromWallet",
+//         populate: { path: "user", select: "name phone role" },
+//       },
+//       {
+//         path: "toWallet",
+//         populate: { path: "user", select: "name phone role" },
+//       },
+//       { path: "initiatedBy", select: "phone role" },
+//     ]);
+
+//   const queryBuilder = new QueryBuilder(myTransaction, query);
+//   const myTransactionData = queryBuilder
+//     .filter()
+//     .search(myTransactionsSearchableFields)
+//     .sort()
+//     .fields()
+//     .paginate();
+
+//   const [data, meta] = await Promise.all([
+//     myTransactionData.build(),
+//     queryBuilder.getMeta(),
+//   ]);
+
+//   // Transform the data to the desired format
+//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
+//   const transformedData = data.map((transaction: any) => {
+//     const transformed = transaction.toObject();
+
+//     // Extract and flatten fromWallet data
+//     if (transaction.fromWallet && typeof transaction.fromWallet === "object") {
+//       transformed.fromWallet = transaction.fromWallet._id;
+//       if (transaction.fromWallet.user) {
+//         transformed.fromWalletSender = transaction.fromWallet.user.name;
+//         transformed.fromWalletPhone = transaction.fromWallet.user.phone;
+//         transformed.fromWalletRole = transaction.fromWallet.user.role;
+//       }
+//       // Remove the nested object
+//       delete transformed.fromWallet;
+//     }
+
+//     // Extract and flatten toWallet data
+//     if (transaction.toWallet && typeof transaction.toWallet === "object") {
+//       transformed.toWallet = transaction.toWallet._id;
+//       if (transaction.toWallet.user) {
+//         transformed.toWalletReceiver = transaction.toWallet.user.name;
+//         transformed.toWalletPhone = transaction.toWallet.user.phone;
+//         transformed.toWalletRole = transaction.toWallet.user.role;
+//       }
+//       // Remove the nested object
+//       delete transformed.toWallet;
+//     }
+
+//     // Extract initiatedBy data if needed
+//     if (
+//       transaction.initiatedBy &&
+//       typeof transaction.initiatedBy === "object"
+//     ) {
+//       transformed.initiatedBy = transaction.initiatedBy._id;
+//       transformed.initiatedByPhone = transaction.initiatedBy.phone;
+//       transformed.initiatedByRole = transaction.initiatedBy.role;
+//     }
+
+//     return transformed;
+//   });
+
+//   return {
+//     data: transformedData,
+//     meta,
+//   };
+// };
+
 const getMyTransactionsHistory = async (
   userId: string,
-  query: Record<string, string> = {}
+  options: Record<string, string | number>
 ) => {
-  const wallet = await Wallet.findOne({ user: userId });
+  const page = Number(options.page) || 1;
+  const limit = Number(options.limit) || 10;
 
+  // Sorting
+  const sortBy = ["createdAt", "amount", "commission"].includes(
+    options.sortBy as string
+  )
+    ? options.sortBy
+    : "createdAt";
+
+  const sortOrder = options.sortOrder === "asc" ? "asc" : "desc";
+
+  // Filtering
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const filter: any = {};
+
+  // Type filter
+  if (options.type && options.type !== "all") {
+    filter.type = options.type;
+  }
+
+  // Status filter
+  if (options.status && options.status !== "all") {
+    filter.status = options.status;
+  }
+
+  const skip = (page - 1) * limit;
+
+  // Build sort object
+  const sortOptions: Record<string, 1 | -1> = {
+    [sortBy as string]: sortOrder === "asc" ? 1 : -1,
+  };
+
+  // Find user's wallet
+  const wallet = await Wallet.findOne({ user: userId });
   if (!wallet) {
     throw new AppError(status.NOT_FOUND, "No wallet is found");
   }
 
-  // Create the initial filter
-  const initialFilter = {
-    $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
-  };
+  // Add wallet filter
+  filter.$or = [{ fromWallet: wallet._id }, { toWallet: wallet._id }];
 
-  // Create base query with initial filter
-  const myTransaction = Transaction.find(initialFilter)
-    .sort({ createdAt: -1 })
+  const transactions = await Transaction.find(filter)
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limit)
     .populate([
       {
         path: "fromWallet",
@@ -258,54 +379,44 @@ const getMyTransactionsHistory = async (
       { path: "initiatedBy", select: "phone role" },
     ]);
 
-  const queryBuilder = new QueryBuilder(myTransaction, query);
-  const myTransactionData = queryBuilder
-    .filter()
-    .search(myTransactionsSearchableFields)
-    .sort()
-    .fields()
-    .paginate();
+  const total = await Transaction.countDocuments(filter);
 
-  const [data, meta] = await Promise.all([
-    myTransactionData.build(),
-    queryBuilder.getMeta(),
-  ]);
-
-  // Transform the data to the desired format
+  // Transform data for better frontend consumption
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const transformedData = data.map((transaction: any) => {
+  const transformedData = transactions.map((transaction: any) => {
     const transformed = transaction.toObject();
 
-    // Extract and flatten fromWallet data
+    // Determine if user is sender or receiver
+    const isSender =
+      transaction.fromWallet?._id?.toString() === wallet._id.toString();
+    transformed.direction = isSender ? "outgoing" : "incoming";
+
+    // Flatten fromWallet data
     if (transaction.fromWallet && typeof transaction.fromWallet === "object") {
-      transformed.fromWallet = transaction.fromWallet._id;
+      transformed.fromWalletId = transaction.fromWallet._id;
       if (transaction.fromWallet.user) {
-        transformed.fromWalletSender = transaction.fromWallet.user.name;
-        transformed.fromWalletPhone = transaction.fromWallet.user.phone;
-        transformed.fromWalletRole = transaction.fromWallet.user.role;
+        transformed.senderName = transaction.fromWallet.user.name;
+        transformed.senderPhone = transaction.fromWallet.user.phone;
+        transformed.senderRole = transaction.fromWallet.user.role;
       }
-      // Remove the nested object
-      delete transformed.fromWallet;
     }
 
-    // Extract and flatten toWallet data
+    // Flatten toWallet data
     if (transaction.toWallet && typeof transaction.toWallet === "object") {
-      transformed.toWallet = transaction.toWallet._id;
+      transformed.toWalletId = transaction.toWallet._id;
       if (transaction.toWallet.user) {
-        transformed.toWalletReceiver = transaction.toWallet.user.name;
-        transformed.toWalletPhone = transaction.toWallet.user.phone;
-        transformed.toWalletRole = transaction.toWallet.user.role;
+        transformed.receiverName = transaction.toWallet.user.name;
+        transformed.receiverPhone = transaction.toWallet.user.phone;
+        transformed.receiverRole = transaction.toWallet.user.role;
       }
-      // Remove the nested object
-      delete transformed.toWallet;
     }
 
-    // Extract initiatedBy data if needed
+    // Flatten initiatedBy
     if (
       transaction.initiatedBy &&
       typeof transaction.initiatedBy === "object"
     ) {
-      transformed.initiatedBy = transaction.initiatedBy._id;
+      transformed.initiatedById = transaction.initiatedBy._id;
       transformed.initiatedByPhone = transaction.initiatedBy.phone;
       transformed.initiatedByRole = transaction.initiatedBy.role;
     }
@@ -315,7 +426,12 @@ const getMyTransactionsHistory = async (
 
   return {
     data: transformedData,
-    meta,
+    meta: {
+      page,
+      limit,
+      total,
+      totalPage: Math.ceil(total / limit),
+    },
   };
 };
 
@@ -488,71 +604,98 @@ const getSingleTransaction = async (transactionId: string) => {
   return transaction;
 };
 
-const getAgentStats = async (agent: JwtPayload) => {
-  const receiverId = new mongoose.Types.ObjectId(String(agent.userId));
-  const senderId = new mongoose.Types.ObjectId(String(agent.userId));
-  const userBalance = await Wallet.findOne({ user: agent.userId });
-  if (!userBalance) {
+const getAgentStats = async (agentId: string) => {
+  const wallet = await Wallet.findOne({ user: agentId });
+  if (!wallet) {
     throw new AppError(status.NOT_FOUND, "Wallet is not found");
   }
-  const totalCashIn = await Transaction.aggregate([
+
+  // Aggregate totals
+  const stats = await Transaction.aggregate([
     {
       $match: {
-        $or: [
-          { toWallet: receiverId },
-          {
-            fromWallet: senderId,
-          },
-        ],
-        type: "cash-in",
+        $or: [{ toWallet: wallet._id }, { fromWallet: wallet._id }],
       },
     },
     {
       $group: {
-        _id: null,
-        total: { $sum: "$amount" },
+        _id: "$type", // group by type (CASH_IN / CASH_OUT)
+        totalAmount: { $sum: "$amount" },
+        totalCommission: { $sum: "$commission" },
       },
     },
   ]);
-  const totalCashOut = await Transaction.aggregate([
-    {
-      $match: {
-        $or: [{ receiver: receiverId }, { sender: senderId }],
-        type: "cash-out",
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$amount" },
-      },
-    },
-  ]);
-  const totalCommission = await Transaction.aggregate([
-    {
-      $match: {
-        $or: [{ receiver: receiverId }, { sender: senderId }],
-      },
-    },
-    {
-      $group: {
-        _id: null,
-        total: { $sum: "$commission" },
-      },
-    },
-  ]);
-  const recentTransactions = await Transaction.find({
-    $or: [{ receiver: receiverId }, { sender: senderId }],
-  })
-    .sort({ createdAt: -1 })
-    .limit(5);
+
+  // Normalize results
+  let totalCashIn = 0;
+  let totalCashOut = 0;
+  let totalCommission = 0;
+
+  stats.forEach((stat) => {
+    if (stat._id === "CASH_IN") {
+      totalCashIn = stat.totalAmount;
+    } else if (stat._id === "CASH_OUT") {
+      totalCashOut = stat.totalAmount;
+    }
+    totalCommission += stat.totalCommission ?? 0;
+  });
 
   return {
-    balance: userBalance.balance,
-    totalCashIn: totalCashIn[0]?.total || 0,
-    totalCashOut: totalCashOut[0]?.total || 0,
-    totalCommission: totalCommission[0]?.total || 0,
-    recentTransactions,
+    balance: wallet.balance,
+    totalCashIn,
+    totalCashOut,
+    totalCommission,
+  };
+};
+
+const getAdminStats = async () => {
+  const totalUsers = await User.countDocuments({ role: "USER" });
+  const totalAgents = await User.countDocuments({ role: "AGENT" });
+  const totalTransactions = await Transaction.countDocuments({});
+  const totalTransactionsAmount = await Transaction.aggregate([
+    { $group: { _id: null, total: { $sum: "$amount" } } },
+  ]);
+
+  const roleBasedPieChartData = await User.aggregate([
+    { $match: { role: { $ne: "admin" } } },
+    {
+      $group: {
+        _id: "$role",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        role: "$_id",
+        count: 1,
+      },
+    },
+  ]);
+
+  const transactionTypeBasedBarChartData = await Transaction.aggregate([
+    {
+      $group: {
+        _id: "$type",
+        count: { $sum: 1 },
+      },
+    },
+    {
+      $project: {
+        _id: 0,
+        type: "$_id",
+        count: 1,
+      },
+    },
+  ]);
+
+  return {
+    totalUsers,
+    totalAgents,
+    totalTransactions,
+    totalTransactionsAmount: totalTransactionsAmount[0]?.total,
+    roleBasedPieChartData,
+    transactionTypeBasedBarChartData,
   };
 };
 
@@ -562,4 +705,5 @@ export const TransactionServices = {
   getAgentCommissionHistory,
   getSingleTransaction,
   getAgentStats,
+  getAdminStats,
 };
