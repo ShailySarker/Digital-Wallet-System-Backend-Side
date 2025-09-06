@@ -22,8 +22,8 @@ const credentialsLogin = async (payload: Partial<IUser>) => {
     throw new AppError(status.BAD_REQUEST, "User does not exist");
   }
   if (
-    isUserExist.isActive === IsActive.BLOCKED ||
-    isUserExist.isActive === IsActive.INACTIVE
+    isUserExist.isActive === IsActive.BLOCK
+    //  ||    isUserExist.isActive === IsActive.INACTIVE
   ) {
     throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
   }
@@ -103,11 +103,14 @@ const forgotPassword = async (email: string) => {
     throw new AppError(status.BAD_REQUEST, "User does not exist");
   }
   if (!isUserExist.isVerified) {
-      throw new AppError(status.BAD_REQUEST, `${isUserExist.role} is not verified`);
+    throw new AppError(
+      status.BAD_REQUEST,
+      `${isUserExist.role} is not verified`
+    );
   }
   if (
-    isUserExist.isActive === IsActive.BLOCKED ||
-    isUserExist.isActive === IsActive.INACTIVE
+    isUserExist.isActive === IsActive.BLOCK
+    // ||    isUserExist.isActive === IsActive.INACTIVE
   ) {
     throw new AppError(status.BAD_REQUEST, `User is ${isUserExist.isActive}`);
   }

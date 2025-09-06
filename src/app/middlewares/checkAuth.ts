@@ -32,8 +32,8 @@ export const checkAuth =
         );
       }
       if (
-        isUserExist.isActive === IsActive.BLOCKED ||
-        isUserExist.isActive === IsActive.INACTIVE
+        isUserExist.isActive === IsActive.BLOCK 
+        // isUserExist.isActive === IsActive.INACTIVE
       ) {
         throw new AppError(
           status.BAD_REQUEST,

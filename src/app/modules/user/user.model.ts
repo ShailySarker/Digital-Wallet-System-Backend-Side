@@ -39,7 +39,7 @@ const userSchema = new Schema<IUser>(
     isActive: {
       type: String,
       enum: Object.values(IsActive),
-      default: IsActive.ACTIVE,
+      default: IsActive.UNBLOCK,
     },
     isVerified: {
       type: Boolean,

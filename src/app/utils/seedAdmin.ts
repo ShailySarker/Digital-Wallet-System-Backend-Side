@@ -1,6 +1,6 @@
 /* eslint-disable no-console */
 import { envVars } from "../config/env";
-import { IsApproved, IUser, Role } from "../modules/user/user.interface";
+import { IsActive, IsApproved, IUser, Role } from "../modules/user/user.interface";
 import { User } from "../modules/user/user.model";
 import bcryptjs from "bcryptjs";
 
@@ -26,7 +26,9 @@ export const seedAdmin = async () => {
             email: envVars.ADMIN.ADMIN_EMAIL,
             password: hashedPassword,
             isApproved: IsApproved.APPROVE,
-            isVerified: true
+            isActive: IsActive.UNBLOCK,
+            isVerified: true,
+            isDeleted: false
         };
 
         const Admin = await User.create(payload);

@@ -5,6 +5,7 @@ import { UserServices } from "./user.service";
 import { sendResponse } from "../../utils/sendResponse";
 import status from "http-status";
 import { JwtPayload } from "jsonwebtoken";
+import { IUserFilters } from "./user.interface";
 
 const createUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
@@ -53,7 +54,7 @@ const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
     const result = await UserServices.getAllUsers(
-      query as Record<string, string>
+      query as IUserFilters
     );
 
     sendResponse(res, {
@@ -85,7 +86,7 @@ const getAllAgents = catchAsync(
 
 const getSpecificUser = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
-    const phone = req.params;
+    const phone = req.params.phone;
     const result = await UserServices.getSpecificUser(phone);
     sendResponse(res, {
       success: true,

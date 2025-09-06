@@ -2,7 +2,13 @@
 import status from "http-status";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
-import { IsActive, IUser, Role } from "./user.interface";
+import {
+  IsActive,
+  IsApproved,
+  IUser,
+  IUserFilters,
+  Role,
+} from "./user.interface";
 import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 import { QueryBuilder } from "../../utils/QueryBuilder";
@@ -17,7 +23,6 @@ const createUser = async (
   session.startTransaction();
 
   try {
-    // console.log("payload...........", payload);
     const { email, phone, role, password, nidNumber, ...rest } = payload;
 
     // Validation checks
@@ -67,6 +72,8 @@ const createUser = async (
         role === Role.AGENT
           ? Number(envVars.WALLET.COMMISSION_RATE)
           : undefined,
+      isActive: IsActive.UNBLOCK,
+      isApproved: IsApproved.PENDING,
       isDeleted: false,
       isVarified: false,
       ...rest,
@@ -142,26 +149,210 @@ const getAllCategoryUser = async (query: Record<string, string>) => {
   };
 };
 
-const getAllUsers = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(
-    User.find({ role: "USER" }).select("-password"),
-    query
-  );
-  const usersData = queryBuilder
-    .filter()
-    .search(userSearchableFields)
-    .sort()
-    .fields()
-    .paginate();
+// const getAllUsers = async (query: Record<string, string>) => {
+//   const queryBuilder = new QueryBuilder(
+//     User.find({ role: "USER" }).select("-password"),
+//     query
+//   );
+//   const usersData = queryBuilder
+//     .filter()
+//     .search(userSearchableFields)
+//     .sort()
+//     .fields()
+//     .paginate();
 
-  const [data, meta] = await Promise.all([
-    usersData.build(),
-    queryBuilder.getMeta(),
-  ]);
+//   const [data, meta] = await Promise.all([
+//     usersData.build(),
+//     queryBuilder.getMeta(),
+//   ]);
+
+//   return {
+//     data,
+//     meta,
+//   };
+// };
+
+// const getAllUsers = async (query: IUserFilters) => {
+//   const {
+//     search,
+//     page = "1",
+//     limit = "10",
+//     role,
+//     isActive,
+//     isApproved,
+//     isVerified,
+//     isDeleted,
+//     ...otherFilters
+//   } = query;
+
+//   // Build search condition
+//   const searchCondition: any = {};
+
+//   if (search) {
+//     searchCondition.$or = [
+//       { name: { $regex: search, $options: "i" } },
+//       { email: { $regex: search, $options: "i" } },
+//       { phone: { $regex: search, $options: "i" } },
+//       { nidNumber: { $regex: search, $options: "i" } },
+//     ];
+//   }
+
+// // Build filter conditions
+// const filterConditions: any = { role: "USER", isDeleted: false };
+
+//   if (role) filterConditions.role = role;
+//   if (isActive) filterConditions.isActive = isActive;
+//   if (isApproved) filterConditions.isApproved = isApproved;
+//   if (isVerified) filterConditions.isVarified = isVerified;
+//   if (isDeleted) filterConditions.isDeleted = isDeleted;
+
+//   // Combine all conditions
+//   const whereConditions = {
+//     ...filterConditions,
+//     ...searchCondition,
+//     ...otherFilters,
+//   };
+
+//   // Pagination setup
+//   const pageNumber = parseInt(page);
+//   const limitNumber = parseInt(limit);
+//   const skip = (pageNumber - 1) * limitNumber;
+
+//   // Execute query with pagination
+//   const users = await User.find(whereConditions)
+//     .select("-password")
+//     .sort({ createdAt: -1 })
+//     .skip(skip)
+//     .limit(limitNumber);
+
+//   // Get total count for pagination metadata
+//   const total = await User.countDocuments(whereConditions);
+
+//   // Calculate pagination metadata
+//   const totalPages = Math.ceil(total / limitNumber);
+//   const hasNext = pageNumber < totalPages;
+//   const hasPrev = pageNumber > 1;
+
+//   return {
+//     data: users,
+//     meta: {
+//       page: pageNumber,
+//       limit: limitNumber,
+//       total,
+//       totalPages,
+//       hasNext,
+//       hasPrev,
+//     },
+//   };
+// };
+// user.service.ts
+const getAllUsers = async (query: IUserFilters) => {
+  const {
+    search,
+    page = "1",
+    limit = "10",
+    role,
+    isActive,
+    isApproved,
+    isVerified,
+    isDeleted,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    ...otherFilters
+  } = query;
+
+  // Build search condition
+  const searchCondition: any = {};
+
+  if (search) {
+    searchCondition.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } },
+      { nidNumber: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Build filter conditions
+  const filterConditions: any = { role: "USER" };
+
+  if (role) filterConditions.role = role;
+  if (isActive) filterConditions.isActive = isActive;
+  if (isApproved) filterConditions.isApproved = isApproved;
+
+  // Handle boolean filters
+  if (isVerified !== undefined) {
+    filterConditions.isVerified = isVerified === "true";
+  }
+  if (isDeleted !== undefined) {
+    filterConditions.isDeleted = isDeleted === "true";
+  }
+
+  // Combine all conditions
+  const whereConditions = {
+    ...filterConditions,
+    ...searchCondition,
+    ...otherFilters,
+  };
+
+  // Pagination setup
+  const pageNumber = parseInt(page);
+  const limitNumber = parseInt(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Sort setup
+  const sortOptions: any = {};
+  sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+  // Execute query with pagination and sorting
+  const users = await User.find(whereConditions)
+    .select("-password")
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limitNumber);
+  // .populate("wallet");
+
+  // Get total count for pagination metadata
+  const total = await User.countDocuments(whereConditions);
+
+  // Get counts for different statuses
+  const activeCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isActive: IsActive.UNBLOCK,
+  });
+  const blockCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isActive: IsActive.BLOCK,
+  });
+  const verifiedCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isVerified: true,
+  });
+  const deletedCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isDeleted: true,
+  });
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(total / limitNumber);
 
   return {
-    data,
-    meta,
+    data: users,
+    meta: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages,
+      hasNext: pageNumber < totalPages,
+      hasPrev: pageNumber > 1,
+      counts: {
+        active: activeCount,
+        verified: verifiedCount,
+        blocked: blockCount,
+        deleted: deletedCount,
+        total: total,
+      },
+    },
   };
 };
 
@@ -189,8 +380,7 @@ const getAllAgents = async (query: Record<string, string>) => {
 };
 
 const getSpecificUser = async (phone: string) => {
-  
-  const user = await User.findOne({phone}).select("-password");
+  const user = await User.findOne({ phone }).select("-password");
 
   if (!user) {
     throw new AppError(status.NOT_FOUND, "Account not found");
@@ -199,18 +389,15 @@ const getSpecificUser = async (phone: string) => {
     throw new AppError(status.NOT_FOUND, "This is not an user account");
   }
 
-  if (user.isActive !== IsActive.ACTIVE) {
-    throw new AppError(
-      status.NOT_FOUND,
-      "The account is not active!"
-    );
-  }
-  if (!user.isVerified) {
-    throw new AppError(
-      status.NOT_FOUND,
-      "The account is not verified!"
-    );
-  }
+  // if (user.isActive !== IsActive.BLOCK) {
+  //   throw new AppError(status.NOT_FOUND, "The account is blocked!");
+  // }
+  // if (user.isActive !== IsActive.ACTIVE) {
+  //   throw new AppError(status.NOT_FOUND, "The account is not active!");
+  // }
+  // if (!user.isVerified) {
+  //   throw new AppError(status.NOT_FOUND, "The account is not verified!");
+  // }
 
   return {
     data: user,
@@ -265,6 +452,9 @@ const updateUser = async (
         `${decodedToken.role} are not authorized for updating USER or AGENT - name | email | phone | password | nidNumber`
       );
     }
+    // if(!isUserExist.isVerified){
+
+    // }
   }
 
   if (payload.email && isUserExist.email !== payload.email) {

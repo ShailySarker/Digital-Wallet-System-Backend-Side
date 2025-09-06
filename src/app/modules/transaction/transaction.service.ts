@@ -693,7 +693,7 @@ const getAdminStats = async () => {
     totalUsers,
     totalAgents,
     totalTransactions,
-    totalTransactionsAmount: totalTransactionsAmount[0]?.total,
+    totalTransactionsAmount: totalTransactionsAmount[0]?.total || 0,
     roleBasedPieChartData,
     transactionTypeBasedBarChartData,
   };

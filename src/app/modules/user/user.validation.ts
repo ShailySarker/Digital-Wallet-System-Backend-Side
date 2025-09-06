@@ -29,7 +29,7 @@ export const createUserZodSchema = z.object({
     ),
   isActive: z
     .enum(Object.values(IsActive) as [string])
-    .default(IsActive.ACTIVE)
+    .default(IsActive.UNBLOCK)
     .optional(),
   isVerified: z
     .boolean({ message: "isVerified must be boolean" })
