@@ -20,6 +20,13 @@ export enum IsApproved {
   SUSPEND = "SUSPEND",
 }
 
+export enum IStatus {
+  BLOCK = "BLOCK",
+  UNBLOCK = "UNBLOCK",
+  APPROVE = "APPROVE",
+  SUSPEND = "SUSPEND",
+}
+
 export interface IUser {
   _id?: Types.ObjectId;
   name: string;
@@ -30,10 +37,11 @@ export interface IUser {
   role: Role;
   wallet?: Types.ObjectId;
   isActive?: IsActive;
-  isVerified?: boolean;
   isApproved?: IsApproved;
-  commissionRate?: number;
+  // status?: IStatus;
+  isVerified?: boolean;
   isDeleted?: boolean;
+  commissionRate?: number;
 }
 
 // wallet?: Types.ObjectId; //user
@@ -45,6 +53,18 @@ export interface IUser {
 
 // Add this interface for filters
 export interface IUserFilters {
+  search?: string;
+  page?: string;
+  limit?: string;
+  role?: Role;
+  isActive?: IsActive;
+  isApproved?: IsApproved;
+  isVerified?: string; // 'true' or 'false'
+  isDeleted?: string; // 'true' or 'false'
+  sortBy?: string;
+  sortOrder?: "asc" | "desc";
+}
+export interface IAgentFilters {
   search?: string;
   page?: string;
   limit?: string;

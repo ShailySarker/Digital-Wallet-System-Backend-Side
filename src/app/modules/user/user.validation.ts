@@ -29,25 +29,25 @@ export const createUserZodSchema = z.object({
     ),
   isActive: z
     .enum(Object.values(IsActive) as [string])
-    .default(IsActive.UNBLOCK)
+    // .default(IsActive.UNBLOCK)
+    .optional(),
+  isApproved: z
+    .enum(Object.values(IsApproved) as [string])
+    // .default(IsApproved.PENDING)
     .optional(),
   isVerified: z
     .boolean({ message: "isVerified must be boolean" })
     .default(false)
     .optional(),
-  isApproved: z
-    .enum(Object.values(IsApproved) as [string])
-    .default(IsApproved.PENDING)
+  isDeleted: z
+    .boolean({ message: "isDeleted must be boolean" })
+    .default(false)
     .optional(),
   commissionRate: z
     .number({ message: "commissionRate must be number" })
     .int({ message: "commissionRate must be a positive number" })
     .min(0, { message: "commissionRate must be a positive number" })
     .max(100, { message: "commissionRate cannot more than 100" })
-    .optional(),
-  isDeleted: z
-    .boolean({ message: "isDeleted must be boolean" })
-    .default(false)
     .optional(),
 });
 

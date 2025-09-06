@@ -3,6 +3,7 @@ import status from "http-status";
 import { envVars } from "../../config/env";
 import AppError from "../../errorHelpers/AppError";
 import {
+  IAgentFilters,
   IsActive,
   IsApproved,
   IUser,
@@ -12,7 +13,7 @@ import {
 import { User } from "./user.model";
 import bcryptjs from "bcryptjs";
 import { QueryBuilder } from "../../utils/QueryBuilder";
-import { allUserSearchableFields, userSearchableFields } from "./user.constant";
+import { allUserSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
 import { Wallet } from "../wallet/wallet.model";
 
@@ -68,14 +69,18 @@ const createUser = async (
       nidNumber,
       password: hashedPassword,
       // isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
+      // commissionRate:
+      //   role === Role.AGENT && Number(envVars.WALLET.COMMISSION_RATE),
+      // isActive: role === Role.USER && IsActive.UNBLOCK,
+      // isApproved: role === Role.AGENT && IsApproved.PENDING,
       commissionRate:
         role === Role.AGENT
           ? Number(envVars.WALLET.COMMISSION_RATE)
           : undefined,
-      isActive: IsActive.UNBLOCK,
-      isApproved: IsApproved.PENDING,
-      isDeleted: false,
-      isVarified: false,
+      isActive: role === Role.USER ? IsActive.UNBLOCK : undefined,
+      isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
+      // isDeleted: false,
+      // isVarified: false,
       ...rest,
     };
 
@@ -356,28 +361,138 @@ const getAllUsers = async (query: IUserFilters) => {
   };
 };
 
-const getAllAgents = async (query: Record<string, string>) => {
-  const queryBuilder = new QueryBuilder(
-    User.find({ role: "AGENT" }).select("-password"),
-    query
-  );
-  const usersData = queryBuilder
-    .filter()
-    .search(userSearchableFields)
-    .sort()
-    .fields()
-    .paginate();
+const getAllAgents = async (query: IAgentFilters) => {
+  const {
+    search,
+    page = "1",
+    limit = "10",
+    role,
+    isActive,
+    isApproved,
+    isVerified,
+    isDeleted,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+    ...otherFilters
+  } = query;
 
-  const [data, meta] = await Promise.all([
-    usersData.build(),
-    queryBuilder.getMeta(),
-  ]);
+  // Build search condition
+  const searchCondition: any = {};
+
+  if (search) {
+    searchCondition.$or = [
+      { name: { $regex: search, $options: "i" } },
+      { email: { $regex: search, $options: "i" } },
+      { phone: { $regex: search, $options: "i" } },
+      { nidNumber: { $regex: search, $options: "i" } },
+    ];
+  }
+
+  // Build filter conditions
+  const filterConditions: any = { role: "AGENT" };
+
+  if (role) filterConditions.role = role;
+  if (isActive) filterConditions.isActive = isActive;
+  if (isApproved) filterConditions.isApproved = isApproved;
+
+  // Handle boolean filters
+  if (isVerified !== undefined) {
+    filterConditions.isVerified = isVerified === "true";
+  }
+  if (isDeleted !== undefined) {
+    filterConditions.isDeleted = isDeleted === "true";
+  }
+
+  // Combine all conditions
+  const whereConditions = {
+    ...filterConditions,
+    ...searchCondition,
+    ...otherFilters,
+  };
+
+  // Pagination setup
+  const pageNumber = parseInt(page);
+  const limitNumber = parseInt(limit);
+  const skip = (pageNumber - 1) * limitNumber;
+
+  // Sort setup
+  const sortOptions: any = {};
+  sortOptions[sortBy] = sortOrder === "asc" ? 1 : -1;
+
+  // Execute query with pagination and sorting
+  const users = await User.find(whereConditions)
+    .select("-password")
+    .sort(sortOptions)
+    .skip(skip)
+    .limit(limitNumber);
+  // .populate("wallet");
+
+  // Get total count for pagination metadata
+  const total = await User.countDocuments(whereConditions);
+
+  // Get counts for different statuses
+  const activeCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isActive: IsActive.UNBLOCK,
+  });
+  const blockCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isActive: IsActive.BLOCK,
+  });
+  const verifiedCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isVerified: true,
+  });
+  const deletedCount = await User.find({ role: "USER" }).countDocuments({
+    ...whereConditions,
+    isDeleted: true,
+  });
+
+  // Calculate pagination metadata
+  const totalPages = Math.ceil(total / limitNumber);
 
   return {
-    data,
-    meta,
+    data: users,
+    meta: {
+      page: pageNumber,
+      limit: limitNumber,
+      total,
+      totalPages,
+      hasNext: pageNumber < totalPages,
+      hasPrev: pageNumber > 1,
+      counts: {
+        active: activeCount,
+        verified: verifiedCount,
+        blocked: blockCount,
+        deleted: deletedCount,
+        total: total,
+      },
+    },
   };
 };
+
+// const getAllAgents = async (query: Record<string, string>) => {
+//   const queryBuilder = new QueryBuilder(
+//     User.find({ role: "AGENT" }).select("-password"),
+//     query
+//   );
+//   const usersData = queryBuilder
+//     .filter()
+//     .search(userSearchableFields)
+//     .sort()
+//     .fields()
+//     .paginate();
+
+//   const [data, meta] = await Promise.all([
+//     usersData.build(),
+//     queryBuilder.getMeta(),
+//   ]);
+
+//   return {
+//     data,
+//     meta,
+//   };
+// };
 
 const getSpecificUser = async (phone: string) => {
   const user = await User.findOne({ phone }).select("-password");

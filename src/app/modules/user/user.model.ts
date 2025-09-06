@@ -39,27 +39,32 @@ const userSchema = new Schema<IUser>(
     isActive: {
       type: String,
       enum: Object.values(IsActive),
-      default: IsActive.UNBLOCK,
-    },
-    isVerified: {
-      type: Boolean,
-      default: false,
+      // default: IsActive.UNBLOCK,
     },
     isApproved: {
       type: String,
       enum: Object.values(IsApproved),
-      default: IsApproved.PENDING,
+      // default: IsApproved.PENDING,
     },
     wallet: {
       type: Schema.Types.ObjectId,
       ref: "Wallet",
     },
-    commissionRate: {
-      type: Number,
+    // status: {
+    //   type: String,
+    //   enum: Object.values(IStatus),
+    //   // default: IsActive.UNBLOCK,
+    // },
+    isVerified: {
+      type: Boolean,
+      default: false,
     },
     isDeleted: {
       type: Boolean,
       default: false,
+    },
+    commissionRate: {
+      type: Number,
     },
   },
   {
