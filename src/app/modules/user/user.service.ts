@@ -79,8 +79,6 @@ const createUser = async (
           : undefined,
       isActive: role === Role.USER ? IsActive.UNBLOCK : undefined,
       isApproved: role === Role.AGENT ? IsApproved.PENDING : undefined,
-      // isDeleted: false,
-      // isVarified: false,
       ...rest,
     };
 
@@ -367,7 +365,6 @@ const getAllAgents = async (query: IAgentFilters) => {
     page = "1",
     limit = "10",
     role,
-    isActive,
     isApproved,
     isVerified,
     isDeleted,
@@ -392,7 +389,6 @@ const getAllAgents = async (query: IAgentFilters) => {
   const filterConditions: any = { role: "AGENT" };
 
   if (role) filterConditions.role = role;
-  if (isActive) filterConditions.isActive = isActive;
   if (isApproved) filterConditions.isApproved = isApproved;
 
   // Handle boolean filters
@@ -431,19 +427,19 @@ const getAllAgents = async (query: IAgentFilters) => {
   const total = await User.countDocuments(whereConditions);
 
   // Get counts for different statuses
-  const activeCount = await User.find({ role: "USER" }).countDocuments({
+  const approvedCount = await User.find({ role: "AGENT" }).countDocuments({
     ...whereConditions,
-    isActive: IsActive.UNBLOCK,
+    isApproved: IsApproved.APPROVE,
   });
-  const blockCount = await User.find({ role: "USER" }).countDocuments({
+  const suspendedCount = await User.find({ role: "AGENT" }).countDocuments({
     ...whereConditions,
-    isActive: IsActive.BLOCK,
+    isApproved: IsApproved.SUSPEND,
   });
-  const verifiedCount = await User.find({ role: "USER" }).countDocuments({
+  const verifiedCount = await User.find({ role: "AGENT" }).countDocuments({
     ...whereConditions,
     isVerified: true,
   });
-  const deletedCount = await User.find({ role: "USER" }).countDocuments({
+  const deletedCount = await User.find({ role: "AGENT" }).countDocuments({
     ...whereConditions,
     isDeleted: true,
   });
@@ -461,9 +457,9 @@ const getAllAgents = async (query: IAgentFilters) => {
       hasNext: pageNumber < totalPages,
       hasPrev: pageNumber > 1,
       counts: {
-        active: activeCount,
+        approved: approvedCount,
         verified: verifiedCount,
-        blocked: blockCount,
+        suspended: suspendedCount,
         deleted: deletedCount,
         total: total,
       },
@@ -553,6 +549,7 @@ const updateUser = async (
       );
     }
   }
+  // console.log(isUserExist.id, decodedToken.userId.toString())
 
   if (
     payload.name ||
@@ -561,15 +558,15 @@ const updateUser = async (
     payload.nidNumber ||
     payload.password
   ) {
-    if (decodedToken.role === Role.ADMIN) {
+    if (
+      decodedToken.role === Role.ADMIN &&
+      !(isUserExist.id === decodedToken.userId.toString())
+    ) {
       throw new AppError(
         status.FORBIDDEN,
         `${decodedToken.role} are not authorized for updating USER or AGENT - name | email | phone | password | nidNumber`
       );
     }
-    // if(!isUserExist.isVerified){
-
-    // }
   }
 
   if (payload.email && isUserExist.email !== payload.email) {
@@ -591,6 +588,45 @@ const updateUser = async (
       payload.password,
       Number(envVars.BCRYPT.BCRYPT_SALT_ROUND)
     );
+  }
+
+
+  // if(payload.role === Role.USER && !(payload.isActive === IsActive.BLOCK || IsActive.UNBLOCK)){
+  //  add field payload.isActive =IsActive.UNBLOCK
+  //  delete field payload.isApproved , payload.commissionRate
+  // }
+  // if(payload.role === Role.AGENT && !(payload.isApproved === IsApproved.PENDING || IsApproved.APPROVE || IsApproved.SUSPEND) && !payload.commissionRate){
+  //   add field payload.isApproved == IsApproved.PENDING, payload.commissionRate == Number(envVars.WALLET.COMMISSION_RATE)
+  //   delete field payload.isActive =IsActive.UNBLOCK
+  // }
+  if (
+    payload.role === Role.USER &&
+    !(
+      payload.isActive === IsActive.BLOCK ||
+      payload.isActive === IsActive.UNBLOCK
+    )
+  ) {
+    payload.isActive = IsActive.UNBLOCK;
+
+    // remove irrelevant fields
+    delete payload.isApproved;
+    delete payload.commissionRate;
+  }
+
+  if (
+    payload.role === Role.AGENT &&
+    !(
+      payload.isApproved === IsApproved.PENDING ||
+      payload.isApproved === IsApproved.APPROVE ||
+      payload.isApproved === IsApproved.SUSPEND
+    ) &&
+    !payload.commissionRate
+  ) {
+    payload.isApproved = IsApproved.PENDING;
+    payload.commissionRate = Number(envVars.WALLET.COMMISSION_RATE);
+
+    // remove irrelevant fields
+    delete payload.isActive;
   }
 
   const newUpdatedUser = await User.findByIdAndUpdate(userId, payload, {
