@@ -177,9 +177,13 @@ const sendMoney = async (
       throw new AppError(status.BAD_REQUEST, "Insufficient balance");
     }
 
-    const receiver = await User.findOne({ phone: receiver_phone }).session(
-      session
-    );
+    const receiver = await User.findOne({
+      $or: [{ phone: receiver_phone }, { email: receiver_phone }],
+    }).session(session);
+
+    // const receiver = await User.findOne({ phone: receiver_phone || email: receiver_phon}).session(
+    //   session
+    // );
     if (!receiver) {
       throw new AppError(status.BAD_REQUEST, "User not found");
     }
@@ -388,7 +392,7 @@ const cashOut = async (user_phone: string, agentId: string, amount: number) => {
     await userWallet.save({ session });
 
     // Update recipient balance
-    agentWallet.balance += amount ;
+    agentWallet.balance += amount;
     await agentWallet.save({ session });
 
     // Create transaction record

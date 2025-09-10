@@ -53,9 +53,7 @@ const getAllCategoryUser = catchAsync(
 const getAllUsers = catchAsync(
   async (req: Request, res: Response, next: NextFunction) => {
     const query = req.query;
-    const result = await UserServices.getAllUsers(
-      query as IUserFilters
-    );
+    const result = await UserServices.getAllUsers(query as IUserFilters);
 
     sendResponse(res, {
       success: true,
@@ -80,6 +78,22 @@ const getAllAgents = catchAsync(
       message: "All agents info retrieved successfully",
       data: result.data,
       meta: result.meta,
+    });
+  }
+);
+
+const getAllUserAndAgent = catchAsync(
+  async (req: Request, res: Response, next: NextFunction) => {
+    const query = req.query;
+    const result = await UserServices.getAllUserAndAgent(
+      query as Record<string, string>
+    );
+
+    sendResponse(res, {
+      success: true,
+      statusCode: status.OK,
+      message: "All user and agent info retrieved successfully",
+      data: result,
     });
   }
 );
@@ -135,6 +149,7 @@ export const UserControllers = {
   getAllCategoryUser,
   getAllUsers,
   getAllAgents,
+  getAllUserAndAgent,
   getSpecificUser,
   getSingleUser,
   updateUser,

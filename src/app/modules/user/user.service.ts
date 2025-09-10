@@ -467,6 +467,37 @@ const getAllAgents = async (query: IAgentFilters) => {
   };
 };
 
+const getAllUserAndAgent = async (query: Record<string, string>) => {
+  const { searchTerm } = query;
+
+  // Build the base query for USER and AGENT roles
+  const baseQuery: any = {
+  role: { $in: [Role.USER, Role.AGENT] },
+  $or: [
+    { isActive: IsActive.UNBLOCK },
+    { isApproved: IsApproved.APPROVE }
+  ],
+  isVerified: true,
+  isDeleted: false,
+};
+
+  if (searchTerm && searchTerm.trim().length >= 3) {
+    const searchRegex = new RegExp(searchTerm.trim(), "i");
+    baseQuery.$or = [
+      { phone: { $regex: searchRegex } },
+      { email: { $regex: searchRegex } },
+    ];
+  }
+
+  // Execute the query
+  const result = await User.find(baseQuery)
+    .select("-password")
+    .sort({ createdAt: -1 })
+    // .limit(10); // Limit results for better performance
+
+  return result;
+};
+
 // const getAllAgents = async (query: Record<string, string>) => {
 //   const queryBuilder = new QueryBuilder(
 //     User.find({ role: "AGENT" }).select("-password"),
@@ -549,7 +580,6 @@ const updateUser = async (
       );
     }
   }
-  // console.log(isUserExist.id, decodedToken.userId.toString())
 
   if (
     payload.name ||
@@ -589,7 +619,6 @@ const updateUser = async (
       Number(envVars.BCRYPT.BCRYPT_SALT_ROUND)
     );
   }
-
 
   // if(payload.role === Role.USER && !(payload.isActive === IsActive.BLOCK || IsActive.UNBLOCK)){
   //  add field payload.isActive =IsActive.UNBLOCK
@@ -643,6 +672,7 @@ export const UserServices = {
   getAllCategoryUser,
   getAllUsers,
   getAllAgents,
+  getAllUserAndAgent,
   getSpecificUser,
   getSingleUser,
   updateUser,
