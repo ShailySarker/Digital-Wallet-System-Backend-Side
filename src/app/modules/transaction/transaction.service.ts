@@ -387,9 +387,30 @@ const getMyTransactionsHistory = async (
     const transformed = transaction.toObject();
 
     // Determine if user is sender or receiver
+    // const isReceiver =
+    //   transaction.toWallet?._id?.toString() === wallet._id.toString();
+    // transformed.direction = isReceiver ? "incoming" : "outgoing";
+
+    // const isSender =
+    // transaction.fromWallet?._id?.toString() === wallet._id.toString();
+    // transformed.direction = isSender ? "outgoing" : "incoming";
+    // console.log(isSender)
+
+    // self transaction
+    const isItSelfTransaction =
+      transaction.fromWallet?._id?.toString() === wallet._id.toString() &&
+      transaction.toWallet?._id?.toString() === wallet._id.toString();
     const isSender =
-      transaction.fromWallet?._id?.toString() === wallet._id.toString();
-    transformed.direction = isSender ? "outgoing" : "incoming";
+      transaction.fromWallet?._id?.toString() === wallet._id.toString() &&
+      transaction.toWallet?._id?.toString() !== wallet._id.toString();
+
+    if (isItSelfTransaction) {
+      transformed.direction = "self";
+    } else if (isSender) {
+      transformed.direction = "outgoing";
+    } else {
+      transformed.direction = "incoming";
+    }
 
     // Flatten fromWallet data
     if (transaction.fromWallet && typeof transaction.fromWallet === "object") {
@@ -423,6 +444,7 @@ const getMyTransactionsHistory = async (
 
     return transformed;
   });
+  // console.log(transformedData);
 
   return {
     data: transformedData,

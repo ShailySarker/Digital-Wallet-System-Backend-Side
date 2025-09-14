@@ -16,6 +16,7 @@ import { QueryBuilder } from "../../utils/QueryBuilder";
 import { allUserSearchableFields } from "./user.constant";
 import { JwtPayload } from "jsonwebtoken";
 import { Wallet } from "../wallet/wallet.model";
+import { Wallet_Status } from "../wallet/wallet.interface";
 
 const createUser = async (
   payload: Partial<IUser>
@@ -472,14 +473,11 @@ const getAllUserAndAgent = async (query: Record<string, string>) => {
 
   // Build the base query for USER and AGENT roles
   const baseQuery: any = {
-  role: { $in: [Role.USER, Role.AGENT] },
-  $or: [
-    { isActive: IsActive.UNBLOCK },
-    { isApproved: IsApproved.APPROVE }
-  ],
-  isVerified: true,
-  isDeleted: false,
-};
+    role: { $in: [Role.USER, Role.AGENT] },
+    $or: [{ isActive: IsActive.UNBLOCK }, { isApproved: IsApproved.APPROVE }],
+    isVerified: true,
+    isDeleted: false,
+  };
 
   if (searchTerm && searchTerm.trim().length >= 3) {
     const searchRegex = new RegExp(searchTerm.trim(), "i");
@@ -492,8 +490,8 @@ const getAllUserAndAgent = async (query: Record<string, string>) => {
   // Execute the query
   const result = await User.find(baseQuery)
     .select("-password")
-    .sort({ createdAt: -1 })
-    // .limit(10); // Limit results for better performance
+    .sort({ createdAt: -1 });
+  // .limit(10); // Limit results for better performance
 
   return result;
 };
@@ -656,6 +654,41 @@ const updateUser = async (
 
     // remove irrelevant fields
     delete payload.isActive;
+  }
+
+  const findWallet = await Wallet.findOne({ user: userId });
+
+  if (!findWallet && isUserExist.role !== Role.ADMIN) {
+    throw new AppError(status.NOT_FOUND, "Wallet is not found");
+  }
+
+  // Only proceed if wallet exists
+  if (findWallet) {
+    if (
+      payload.isApproved === IsApproved.SUSPEND ||
+      payload.isActive === IsActive.BLOCK
+    ) {
+      await Wallet.findByIdAndUpdate(
+        findWallet._id,
+        { status: Wallet_Status.BLOCK },
+        { new: true, runValidators: true }
+      );
+    } else if (
+      payload.isApproved === IsApproved.APPROVE ||
+      payload.isActive === IsActive.UNBLOCK
+    ) {
+      await Wallet.findByIdAndUpdate(
+        findWallet._id,
+        { status: Wallet_Status.UNBLOCK },
+        { new: true, runValidators: true }
+      );
+    } else {
+      await Wallet.findByIdAndUpdate(
+        findWallet._id,
+        { status: Wallet_Status.UNBLOCK },
+        { new: true, runValidators: true }
+      );
+    }
   }
 
   const newUpdatedUser = await User.findByIdAndUpdate(userId, payload, {

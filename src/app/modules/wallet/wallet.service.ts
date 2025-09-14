@@ -377,7 +377,7 @@ const cashOut = async (user_phone: string, agentId: string, amount: number) => {
       throw new AppError(status.FORBIDDEN, "Agent wallet is blocked");
     }
     if (!agentWallet || agentWallet.balance < amount) {
-      throw new AppError(status.BAD_REQUEST, "Insufficient balance");
+      throw new AppError(status.BAD_REQUEST, "Agent have insufficient balance");
     }
     if (userId.toString() === agentId) {
       throw new AppError(status.BAD_REQUEST, "Cannot cash-out to yourself");
@@ -387,6 +387,10 @@ const cashOut = async (user_phone: string, agentId: string, amount: number) => {
     const commission = amount * (Number(envVars.WALLET.COMMISSION_RATE) / 100);
     const totalAmount = amount + commission;
 
+    if (userWallet.balance < totalAmount) {
+      throw new AppError(status.BAD_REQUEST, "User have insufficient balance");
+    }
+    
     // Update user balance
     userWallet.balance -= totalAmount;
     await userWallet.save({ session });
