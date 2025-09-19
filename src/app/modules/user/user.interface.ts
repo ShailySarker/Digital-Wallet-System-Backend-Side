@@ -76,3 +76,19 @@ export interface IAgentFilters {
   sortBy?: string;
   sortOrder?: "asc" | "desc";
 }
+
+export interface IGetAllUser{
+  page: number;
+  limit: number;
+  total: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+  counts: {
+    active: number;
+    verified: number;
+    blocked: number;
+    deleted: number;
+    total: number;
+  }
+}

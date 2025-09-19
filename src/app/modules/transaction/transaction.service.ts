@@ -4,7 +4,6 @@ import { Transaction } from "./transaction.model";
 import { Wallet } from "../wallet/wallet.model";
 import { QueryOptions } from "mongoose";
 import { User } from "../user/user.model";
-// import { QueryOptions } from "./transaction.interface";
 
 const getAllTransactions = async (query: Record<string, string>) => {
   // Build the base filter for database-level filtering
@@ -14,14 +13,6 @@ const getAllTransactions = async (query: Record<string, string>) => {
   // Apply filters that can be handled at the database level
   if (query.type) dbFilter.type = query.type;
   if (query.status) dbFilter.status = query.status;
-
-  // Handle search term at database level
-  if (query.searchTerm) {
-    dbFilter.$or = [
-      { type: { $regex: query.searchTerm, $options: "i" } },
-      { status: { $regex: query.searchTerm, $options: "i" } },
-    ];
-  }
 
   // Build sort option
   const sortParam = query.sort || "-createdAt";
@@ -61,11 +52,11 @@ const getAllTransactions = async (query: Record<string, string>) => {
     .populate([
       {
         path: "fromWallet",
-        populate: { path: "user", select: "name phone role" },
+        populate: { path: "user", select: "name phone email role" },
       },
       {
         path: "toWallet",
-        populate: { path: "user", select: "name phone role" },
+        populate: { path: "user", select: "name phone email role" },
       },
       { path: "initiatedBy", select: "phone role" },
     ]);
@@ -81,6 +72,7 @@ const getAllTransactions = async (query: Record<string, string>) => {
       if (transaction.fromWallet.user) {
         transformed.fromWalletSender = transaction.fromWallet.user.name;
         transformed.fromWalletPhone = transaction.fromWallet.user.phone;
+        transformed.fromWalletEmail = transaction.fromWallet.user.email;
         transformed.fromWalletRole = transaction.fromWallet.user.role;
       }
       delete transformed.fromWallet;
@@ -92,16 +84,14 @@ const getAllTransactions = async (query: Record<string, string>) => {
       if (transaction.toWallet.user) {
         transformed.toWalletReceiver = transaction.toWallet.user.name;
         transformed.toWalletPhone = transaction.toWallet.user.phone;
+        transformed.toWalletEmail = transaction.toWallet.user.email;
         transformed.toWalletRole = transaction.toWallet.user.role;
       }
       delete transformed.toWallet;
     }
 
     // Extract initiatedBy data if needed
-    if (
-      transaction.initiatedBy &&
-      typeof transaction.initiatedBy === "object"
-    ) {
+    if (transaction.initiatedBy && typeof transaction.initiatedBy === "object") {
       transformed.initiatedBy = transaction.initiatedBy._id;
       transformed.initiatedByPhone = transaction.initiatedBy.phone;
       transformed.initiatedByRole = transaction.initiatedBy.role;
@@ -110,14 +100,44 @@ const getAllTransactions = async (query: Record<string, string>) => {
     return transformed;
   });
 
-  // Apply additional filtering on the FULL transformed dataset
+  // Apply search filtering on the FULL transformed dataset
   let filteredData = transformedData;
 
+  // Single search term that searches across all fields
+  if (query.searchTerm) {
+    const searchTermLower = query.searchTerm.toLowerCase();
+    filteredData = filteredData.filter((item) => {
+      return (
+        // Transaction fields
+        (item.type && item.type.toLowerCase().includes(searchTermLower)) ||
+        (item.status && item.status.toLowerCase().includes(searchTermLower)) ||
+        (item.amount && item.amount.toString().includes(searchTermLower)) ||
+        (item.commission && item.commission.toString().includes(searchTermLower)) ||
+        
+        // Sender fields
+        (item.fromWalletSender && item.fromWalletSender.toLowerCase().includes(searchTermLower)) ||
+        (item.fromWalletPhone && item.fromWalletPhone.includes(searchTermLower)) ||
+        (item.fromWalletEmail && item.fromWalletEmail.toLowerCase().includes(searchTermLower)) ||
+        (item.fromWalletRole && item.fromWalletRole.toLowerCase().includes(searchTermLower)) ||
+        
+        // Receiver fields
+        (item.toWalletReceiver && item.toWalletReceiver.toLowerCase().includes(searchTermLower)) ||
+        (item.toWalletPhone && item.toWalletPhone.includes(searchTermLower)) ||
+        (item.toWalletEmail && item.toWalletEmail.toLowerCase().includes(searchTermLower)) ||
+        (item.toWalletRole && item.toWalletRole.toLowerCase().includes(searchTermLower)) ||
+        
+        // Date field (format: MM/DD/YYYY or other formats)
+        (item.createdAt && new Date(item.createdAt).toLocaleDateString().includes(searchTermLower))
+      );
+    });
+  }
+
+  // Individual filter fields (for backward compatibility)
   if (query.fromWalletSender) {
     filteredData = filteredData.filter(
       (item) =>
         item.fromWalletSender &&
-        item.fromWalletSender.includes(query.fromWalletSender as string)
+        item.fromWalletSender.toLowerCase().includes(query.fromWalletSender.toLowerCase())
     );
   }
 
@@ -125,23 +145,15 @@ const getAllTransactions = async (query: Record<string, string>) => {
     filteredData = filteredData.filter(
       (item) =>
         item.fromWalletPhone &&
-        item.fromWalletPhone.includes(query.fromWalletPhone as string)
+        item.fromWalletPhone.includes(query.fromWalletPhone)
     );
   }
 
-  if (query.toWalletReceiver) {
+  if (query.fromWalletEmail) {
     filteredData = filteredData.filter(
       (item) =>
-        item.toWalletReceiver &&
-        item.toWalletReceiver.includes(query.toWalletReceiver as string)
-    );
-  }
-
-  if (query.toWalletPhone) {
-    filteredData = filteredData.filter(
-      (item) =>
-        item.toWalletPhone &&
-        item.toWalletPhone.includes(query.toWalletPhone as string)
+        item.fromWalletEmail &&
+        item.fromWalletEmail.toLowerCase().includes(query.fromWalletEmail.toLowerCase())
     );
   }
 
@@ -149,7 +161,31 @@ const getAllTransactions = async (query: Record<string, string>) => {
     filteredData = filteredData.filter(
       (item) =>
         item.fromWalletRole &&
-        item.fromWalletRole.includes(query.fromWalletRole as string)
+        item.fromWalletRole.toLowerCase().includes(query.fromWalletRole.toLowerCase())
+    );
+  }
+
+  if (query.toWalletReceiver) {
+    filteredData = filteredData.filter(
+      (item) =>
+        item.toWalletReceiver &&
+        item.toWalletReceiver.toLowerCase().includes(query.toWalletReceiver.toLowerCase())
+    );
+  }
+
+  if (query.toWalletPhone) {
+    filteredData = filteredData.filter(
+      (item) =>
+        item.toWalletPhone &&
+        item.toWalletPhone.includes(query.toWalletPhone)
+    );
+  }
+
+  if (query.toWalletEmail) {
+    filteredData = filteredData.filter(
+      (item) =>
+        item.toWalletEmail &&
+        item.toWalletEmail.toLowerCase().includes(query.toWalletEmail.toLowerCase())
     );
   }
 
@@ -157,7 +193,7 @@ const getAllTransactions = async (query: Record<string, string>) => {
     filteredData = filteredData.filter(
       (item) =>
         item.toWalletRole &&
-        item.toWalletRole.includes(query.toWalletRole as string)
+        item.toWalletRole.toLowerCase().includes(query.toWalletRole.toLowerCase())
     );
   }
 
@@ -173,149 +209,6 @@ const getAllTransactions = async (query: Record<string, string>) => {
     meta: { page, limit, total, totalPage },
   };
 };
-// ========================================================================
-// const getMyTransactionsHistory = async (userId: string) => {
-//   const wallet = await Wallet.findOne({ user: userId });
-//   // console.log(wallet);
-//   if (!wallet) {
-//     throw new AppError(status.NOT_FOUND, "No wallet is found");
-//   }
-
-//   const myTransaction = Transaction.find({
-//     $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
-//   })
-//     .sort({ createdAt: -1 })
-//     .populate("initiatedBy", "phone role");
-
-//   return myTransaction;
-// };
-
-// const getMyTransactionsHistory = async (
-//   userId: string,
-//   query: Record<string, string>
-// ) => {
-//   const wallet = await Wallet.findOne({ user: userId });
-//   // console.log(wallet);
-//   if (!wallet) {
-//     throw new AppError(status.NOT_FOUND, "No wallet is found");
-//   }
-//   const myTransaction = Transaction.find({
-//     $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
-//   })
-//   .sort({ createdAt: -1 })
-//   .populate([
-//     { path: "fromWallet", populate: { path: "user", select: "name phone role" } },
-//     { path: "toWallet", populate: { path: "user", select: "name phone role" } },
-//     { path: "initiatedBy", select: "phone role" },
-//   ]);
-// console.log(myTransaction);
-// const queryBuilder = new QueryBuilder(myTransaction, query);
-// const myTransactionData = queryBuilder
-//   .filter()
-//   .search(myTransactionsSearchableFields)
-//   .sort()
-//   .fields()
-//   .paginate();
-// const [data, meta] = await Promise.all([
-//   myTransactionData.build(),
-//   queryBuilder.getMeta(),
-// ]);
-// return {
-//   data,
-//   meta,
-// };
-// };
-
-// const getMyTransactionsHistory = async (
-//   userId: string,
-//   query: Record<string, string> = {}
-// ) => {
-//   const wallet = await Wallet.findOne({ user: userId });
-
-//   if (!wallet) {
-//     throw new AppError(status.NOT_FOUND, "No wallet is found");
-//   }
-
-//   // Create the initial filter
-//   const initialFilter = {
-//     $or: [{ fromWallet: wallet._id }, { toWallet: wallet._id }],
-//   };
-
-//   // Create base query with initial filter
-//   const myTransaction = Transaction.find(initialFilter)
-//     .sort({ createdAt: -1 })
-//     .populate([
-//       {
-//         path: "fromWallet",
-//         populate: { path: "user", select: "name phone role" },
-//       },
-//       {
-//         path: "toWallet",
-//         populate: { path: "user", select: "name phone role" },
-//       },
-//       { path: "initiatedBy", select: "phone role" },
-//     ]);
-
-//   const queryBuilder = new QueryBuilder(myTransaction, query);
-//   const myTransactionData = queryBuilder
-//     .filter()
-//     .search(myTransactionsSearchableFields)
-//     .sort()
-//     .fields()
-//     .paginate();
-
-//   const [data, meta] = await Promise.all([
-//     myTransactionData.build(),
-//     queryBuilder.getMeta(),
-//   ]);
-
-//   // Transform the data to the desired format
-//   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-//   const transformedData = data.map((transaction: any) => {
-//     const transformed = transaction.toObject();
-
-//     // Extract and flatten fromWallet data
-//     if (transaction.fromWallet && typeof transaction.fromWallet === "object") {
-//       transformed.fromWallet = transaction.fromWallet._id;
-//       if (transaction.fromWallet.user) {
-//         transformed.fromWalletSender = transaction.fromWallet.user.name;
-//         transformed.fromWalletPhone = transaction.fromWallet.user.phone;
-//         transformed.fromWalletRole = transaction.fromWallet.user.role;
-//       }
-//       // Remove the nested object
-//       delete transformed.fromWallet;
-//     }
-
-//     // Extract and flatten toWallet data
-//     if (transaction.toWallet && typeof transaction.toWallet === "object") {
-//       transformed.toWallet = transaction.toWallet._id;
-//       if (transaction.toWallet.user) {
-//         transformed.toWalletReceiver = transaction.toWallet.user.name;
-//         transformed.toWalletPhone = transaction.toWallet.user.phone;
-//         transformed.toWalletRole = transaction.toWallet.user.role;
-//       }
-//       // Remove the nested object
-//       delete transformed.toWallet;
-//     }
-
-//     // Extract initiatedBy data if needed
-//     if (
-//       transaction.initiatedBy &&
-//       typeof transaction.initiatedBy === "object"
-//     ) {
-//       transformed.initiatedBy = transaction.initiatedBy._id;
-//       transformed.initiatedByPhone = transaction.initiatedBy.phone;
-//       transformed.initiatedByRole = transaction.initiatedBy.role;
-//     }
-
-//     return transformed;
-//   });
-
-//   return {
-//     data: transformedData,
-//     meta,
-//   };
-// };
 
 const getMyTransactionsHistory = async (
   userId: string,
@@ -551,71 +444,6 @@ const getAgentCommissionHistory = async (
     },
   };
 };
-
-// const getAgentCommissionHistory = async (agentId: string) => {
-//   const myCommissions = await Transaction.find({
-//     initiatedBy: agentId,
-//     commission: { $gt: 0 },
-//   })
-//     .sort({ createdAt: -1 })
-//     .populate([
-//       {
-//         path: "fromWallet",
-//         populate: { path: "user", select: "name phone role" },
-//       },
-//       {
-//         path: "toWallet",
-//         populate: { path: "user", select: "name phone role" },
-//       },
-//       { path: "initiatedBy", select: "phone role" },
-//     ]);
-
-//   if (!myCommissions) {
-//     throw new AppError(status.NOT_FOUND, "Commissions are not available now");
-//   }
-
-//   const transformedData = myCommissions.map((transaction: any) => {
-//     const transformed = transaction.toObject();
-
-//     // Extract and flatten fromWallet data
-//     if (transaction.fromWallet && typeof transaction.fromWallet === "object") {
-//       transformed.fromWallet = transaction.fromWallet._id;
-//       if (transaction.fromWallet.user) {
-//         transformed.fromWalletSender = transaction.fromWallet.user.name;
-//         transformed.fromWalletPhone = transaction.fromWallet.user.phone;
-//         transformed.fromWalletRole = transaction.fromWallet.user.role;
-//       }
-//       // Remove the nested object
-//       delete transformed.fromWallet;
-//     }
-
-//     // Extract and flatten toWallet data
-//     if (transaction.toWallet && typeof transaction.toWallet === "object") {
-//       transformed.toWallet = transaction.toWallet._id;
-//       if (transaction.toWallet.user) {
-//         transformed.toWalletReceiver = transaction.toWallet.user.name;
-//         transformed.toWalletPhone = transaction.toWallet.user.phone;
-//         transformed.toWalletRole = transaction.toWallet.user.role;
-//       }
-//       // Remove the nested object
-//       delete transformed.toWallet;
-//     }
-
-//     // Extract initiatedBy data if needed
-//     if (
-//       transaction.initiatedBy &&
-//       typeof transaction.initiatedBy === "object"
-//     ) {
-//       transformed.initiatedBy = transaction.initiatedBy._id;
-//       transformed.initiatedByPhone = transaction.initiatedBy.phone;
-//       transformed.initiatedByRole = transaction.initiatedBy.role;
-//     }
-
-//     return transformed;
-//   });
-
-//   return transformedData;
-// };
 
 const getSingleTransaction = async (transactionId: string) => {
   const transaction = await Transaction.findById(transactionId);
