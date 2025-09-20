@@ -1,7 +1,7 @@
 import express from "express";
 import { validatedRequest } from "../../middlewares/validatedRequest";
 import {
-  constctUsZodSchema,
+  contactUsZodSchema,
   updateContactMessageStatusZodSchema,
 } from "./contact.validation";
 import { ContactControllers } from "./contact.controller";
@@ -12,7 +12,7 @@ const router = express.Router();
 
 router.post(
   "/contact-with-us",
-  validatedRequest(constctUsZodSchema),
+  validatedRequest(contactUsZodSchema),
   ContactControllers.contactUs
 );
 router.get(
