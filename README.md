@@ -40,14 +40,20 @@ https://digital-wallet-system-backend-side.vercel.app
 - `POST /api/v1/auth/forgot-password` - Forget password 
 - `POST /api/v1/auth/reset-password` - Reset password
 
+### OTP
+- `POST /api/v1/otp/send` - Sending otp into email
+- `POST /api/v1/otp/verify` - Verifying otp 
+
 ### User
 - `POST /api/v1/user/register` - Register new user
+- `GET /api/v1/user/my-profile` - Get my profile
 - `GET /api/v1/user/all-category-user` - Get all category user(admin only)
 - `GET /api/v1/user/all-users` - Get all users (admin only)
 - `GET /api/v1/user/all-agents` - Get all agents (admin only)
-- `GET /api/v1/user/my-profile` - Get my profile
+- `GET /api/v1/user/all-user-and-agent` - Get all users and agents (user and agent only)
+- `GET /api/v1/user//get-user` - Get specific user
 - `GET /api/v1/user/:id` - Get single user (admin only)
-- `PATCH /api/v1/user/:id` - Update user (user/agent can update their --> name, email, phone, password, nidNumber and admin can update user/agent -> isActive, isDeleted, isApproved(Approve/suspend), commissionRate)
+- `PATCH /api/v1/user/:id` - Update user according to frontend requirement
 
 ### Wallet
 - `GET /api/v1/wallet/my-wallet` - Get user wallet
@@ -63,9 +69,16 @@ https://digital-wallet-system-backend-side.vercel.app
 ### Transaction
 - `GET /api/v1/transaction/my-transactions` - Get my transactions history (user, agent only)
 - `GET /api/v1/transaction/all-transactions` - Get all transactions history (admin only)
-- `GET /api/v1/transaction/commissions` - Get my agent commissions history (admin only)
+- `GET /api/v1/transaction/commissions` - Get agent own commissions history (admin only)
+- `GET /api/v1/transaction/agent-stats` - Get agent own stats info (agent only)
+- `GET /api/v1/transaction/admin-stats` - Get admin own stats info (admin only)
 - `GET /api/v1/transactions/:id` - Get single transaction
 
+## Contact
+- `POST /api/v1/contact/contact-with-us` - Contact us form
+- `GET /api/v1/contact/all-contact-message` - Get all message (admin only)
+- `PATCH /api/v1/contact/contact-message/:id` - Update message status (admin only)
+ 
 ## Setup
 
 1. Clone the repository
@@ -107,9 +120,15 @@ https://digital-wallet-system-backend-side.vercel.app
 ### SMTP gamail setup 
 - `SMTP_HOST = your_info`
 - `SMTP_PORT = your_info`
-- `SMTP_USER = syour_info`
+- `SMTP_USER = your_info`
 - `SMTP_PASS = your_info`
 - `SMTP_FROM = your_info`
+
+# redis
+- `REDIS_HOST = your_info`
+- `REDIS_PORT = your_info`
+- `REDIS_USERNAME = your_info`
+- `REDIS_PASSWORD = your_info`
 
 ### wallet
 - `INITIAL_BALANCE = 50`
