@@ -319,6 +319,7 @@ const getAllUsers = async (query: IUserFilters) => {
   // Get total count for pagination metadata
   const total = await User.countDocuments(whereConditions);
   
+  // total user
   const totalUser = await User.find({ role: "USER" }).countDocuments();
 
   // Get counts for different statuses
@@ -428,6 +429,8 @@ const getAllAgents = async (query: IAgentFilters) => {
 
   // Get total count for pagination metadata
   const total = await User.countDocuments(whereConditions);
+  
+  // total agent
   const totalAgent = await User.find({ role: "AGENT" }).countDocuments();
 
   // Get counts for different statuses
