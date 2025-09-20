@@ -318,22 +318,24 @@ const getAllUsers = async (query: IUserFilters) => {
 
   // Get total count for pagination metadata
   const total = await User.countDocuments(whereConditions);
+  
+  const totalUser = await User.find({ role: "USER" }).countDocuments();
 
   // Get counts for different statuses
   const activeCount = await User.find({ role: "USER" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isActive: IsActive.UNBLOCK,
   });
   const blockCount = await User.find({ role: "USER" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isActive: IsActive.BLOCK,
   });
   const verifiedCount = await User.find({ role: "USER" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isVerified: true,
   });
   const deletedCount = await User.find({ role: "USER" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isDeleted: true,
   });
 
@@ -354,7 +356,7 @@ const getAllUsers = async (query: IUserFilters) => {
         verified: verifiedCount,
         blocked: blockCount,
         deleted: deletedCount,
-        total: total,
+        total: totalUser,
       },
     },
   };
@@ -426,22 +428,23 @@ const getAllAgents = async (query: IAgentFilters) => {
 
   // Get total count for pagination metadata
   const total = await User.countDocuments(whereConditions);
+  const totalAgent = await User.find({ role: "AGENT" }).countDocuments();
 
   // Get counts for different statuses
   const approvedCount = await User.find({ role: "AGENT" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isApproved: IsApproved.APPROVE,
   });
   const suspendedCount = await User.find({ role: "AGENT" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isApproved: IsApproved.SUSPEND,
   });
   const verifiedCount = await User.find({ role: "AGENT" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isVerified: true,
   });
   const deletedCount = await User.find({ role: "AGENT" }).countDocuments({
-    ...whereConditions,
+    // ...whereConditions,
     isDeleted: true,
   });
 
@@ -462,7 +465,7 @@ const getAllAgents = async (query: IAgentFilters) => {
         verified: verifiedCount,
         suspended: suspendedCount,
         deleted: deletedCount,
-        total: total,
+        total: totalAgent,
       },
     },
   };
